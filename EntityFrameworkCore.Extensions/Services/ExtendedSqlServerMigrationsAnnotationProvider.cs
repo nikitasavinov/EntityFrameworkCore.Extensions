@@ -17,7 +17,7 @@ namespace EntityFrameworkCore.Extensions.Services
 
         public override IEnumerable<IAnnotation> For(IProperty property)
         {
-            var annotations = base.For(property).Concat(property.GetAnnotations().Where(t => t.Name == ExtendedAnnotationConstants.DynamicDataMasking));
+            var annotations = base.For(property).Concat(property.GetAnnotations().Where(t => t.Name == AnnotationConstants.DynamicDataMasking));
 
             var memberInfo = property.PropertyInfo ?? (MemberInfo)property.FieldInfo;
             var attr = memberInfo?.GetCustomAttribute<DataMaskingAttribute>();
@@ -25,7 +25,7 @@ namespace EntityFrameworkCore.Extensions.Services
             if (attr != null)
             {
                 annotations = annotations.Concat(new IAnnotation[]
-                    {new Annotation(ExtendedAnnotationConstants.DynamicDataMasking, attr.MaskingFunction)});
+                    {new Annotation(AnnotationConstants.DynamicDataMasking, attr.MaskingFunction)});
             }
 
             return annotations;

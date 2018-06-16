@@ -31,9 +31,9 @@ namespace EntityFrameworkCore.Extensions.Samples
 
                 modelBuilder.OverrideDeleteBehaviour(DeleteBehavior.Cascade); //Set Cascade as a default delete behaviour
                 
-                modelBuilder.Entity<Customer>().Property(t => t.Surname).HasAnnotation(ExtendedAnnotationConstants.DynamicDataMasking, MaskingFunctions.Default());
-                modelBuilder.Entity<Customer>().Property(t => t.DiscountCardNumber).HasAnnotation(ExtendedAnnotationConstants.DynamicDataMasking, MaskingFunctions.Random(10, 100));
-                modelBuilder.Entity<Customer>().Property(t => t.Phone).HasAnnotation(ExtendedAnnotationConstants.DynamicDataMasking, MaskingFunctions.Partial(2, "XX-XX", 1));
+                modelBuilder.Entity<Customer>().Property(t => t.Surname).HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Default());
+                modelBuilder.Entity<Customer>().Property(t => t.DiscountCardNumber).HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Random(10, 100));
+                modelBuilder.Entity<Customer>().Property(t => t.Phone).HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Partial(2, "XX-XX", 1));
             }
 
             public DbSet<Customer> Customers { get; set; }

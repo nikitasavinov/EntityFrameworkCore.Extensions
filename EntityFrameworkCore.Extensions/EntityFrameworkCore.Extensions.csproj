@@ -2,6 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Nikita Savinov</Authors>
+    <Company>Nikita Savinov</Company>
+    <PackageProjectUrl>https://github.com/nikitasavinov/EntityFrameworkCore.Extensions</PackageProjectUrl>
+    <Description />
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>

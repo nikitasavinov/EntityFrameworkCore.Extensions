@@ -18,7 +18,7 @@ namespace EntityFrameworkCore.Extensions.Services
             {
                 var sqlHelper = Dependencies.SqlGenerationHelper;
 
-                var addDynamicMask = column.FindAnnotation(ExtendedAnnotationConstants.DynamicDataMasking);
+                var addDynamicMask = column.FindAnnotation(AnnotationConstants.DynamicDataMasking);
                 if (addDynamicMask != null)
                 {
                     builder.Append("ALTER TABLE ")
@@ -34,7 +34,7 @@ namespace EntityFrameworkCore.Extensions.Services
         protected override void Generate(AlterColumnOperation operation, IModel model, MigrationCommandListBuilder builder)
         {
             base.Generate(operation, model, builder);
-            if (operation.OldColumn.FindAnnotation(ExtendedAnnotationConstants.DynamicDataMasking) != null && operation.FindAnnotation(ExtendedAnnotationConstants.DynamicDataMasking) == null)
+            if (operation.OldColumn.FindAnnotation(AnnotationConstants.DynamicDataMasking) != null && operation.FindAnnotation(AnnotationConstants.DynamicDataMasking) == null)
             {
                 builder.Append("ALTER TABLE ")
                    .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))

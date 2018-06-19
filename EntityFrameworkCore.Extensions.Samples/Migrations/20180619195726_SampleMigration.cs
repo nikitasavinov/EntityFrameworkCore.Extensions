@@ -21,7 +21,9 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                     Phone = table.Column<string>(nullable: true)
                         .Annotation("DynamicDataMasking", "partial(2, \"XX-XX\", 1)"),
                     DiscountCardNumber = table.Column<int>(nullable: false)
-                        .Annotation("DynamicDataMasking", "random(10, 100)")
+                        .Annotation("DynamicDataMasking", "random(10, 100)"),
+                    SampleProperty1 = table.Column<string>(nullable: true),
+                    SampleProperty2 = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -52,8 +54,6 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                 name: "IX_Order_CustomerId",
                 table: "Order",
                 column: "CustomerId");
-
-            migrationBuilder.SqlFile("SqlFiles\\ImportCustomers.sql");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

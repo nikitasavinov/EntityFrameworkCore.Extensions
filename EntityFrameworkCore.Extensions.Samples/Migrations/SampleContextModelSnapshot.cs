@@ -33,6 +33,10 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                     b.Property<string>("Phone")
                         .HasAnnotation("DynamicDataMasking", "partial(2, \"XX-XX\", 1)");
 
+                    b.Property<string>("SampleProperty1");
+
+                    b.Property<string>("SampleProperty2");
+
                     b.Property<string>("Surname")
                         .HasAnnotation("DynamicDataMasking", "default()");
 

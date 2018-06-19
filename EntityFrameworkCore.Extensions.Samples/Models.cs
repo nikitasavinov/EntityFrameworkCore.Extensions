@@ -13,6 +13,8 @@ namespace EntityFrameworkCore.Extensions.Samples
         public string Surname { get; set; }
         public string Phone { get; set; }
         public int DiscountCardNumber { get; set; }
+        public string SampleProperty1 { get; set; }
+        public string SampleProperty2 { get; set; }
 
         public IList<Order> Orders { get; set; }
     }

@@ -34,7 +34,7 @@ namespace EntityFrameworkCore.Extensions.Samples
                 modelBuilder.Entity<Customer>().Property(t => t.Surname).HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Default());
                 modelBuilder.Entity<Customer>().Property(t => t.DiscountCardNumber).HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Random(10, 100));
                 modelBuilder.Entity<Customer>().Property(t => t.Phone).HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Partial(2, "XX-XX", 1));
-            }
+          }
 
             public DbSet<Customer> Customers { get; set; }
         }

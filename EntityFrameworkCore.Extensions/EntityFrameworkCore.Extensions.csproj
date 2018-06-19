@@ -5,7 +5,7 @@
     <Authors>Nikita Savinov</Authors>
     <Company>Nikita Savinov</Company>
     <PackageProjectUrl>https://github.com/nikitasavinov/EntityFrameworkCore.Extensions</PackageProjectUrl>
-    <Description />
+    <Description>A set of usefull extensions for EntityFrameworkCore</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Version>1.0.1</Version>
   </PropertyGroup>

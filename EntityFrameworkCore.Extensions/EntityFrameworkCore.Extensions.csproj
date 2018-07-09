@@ -5,9 +5,10 @@
     <Authors>Nikita Savinov</Authors>
     <Company>Nikita Savinov</Company>
     <PackageProjectUrl>https://github.com/nikitasavinov/EntityFrameworkCore.Extensions</PackageProjectUrl>
-    <Description>A set of usefull extensions for EntityFrameworkCore</Description>
+    <Description>A set of usefull extensions for EntityFrameworkCore (Dynamic data masking, MigrationBuilder and ModelBuilder extensions, etc)</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
+    <PackageTags>EntityFrameworkCore entity-framework-core DB</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

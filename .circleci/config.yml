@@ -6,4 +6,4 @@ jobs:
     steps:
       - checkout
       - run: dotnet build
-      - run: dotnet test EntityFrameworkCore.Extensions.Tests\EntityFrameworkCore.Extensions.Tests.csproj --no-build
+      - run: dotnet test --no-build

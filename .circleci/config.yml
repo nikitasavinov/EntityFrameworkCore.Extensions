@@ -1,0 +1,7 @@
+version: 2
+jobs:
+  build:
+    docker: microsoft/dotnet:2.2-runtime
+    steps:
+      - checkout
+      - run: dotnet build

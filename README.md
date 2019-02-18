@@ -3,6 +3,7 @@
 Please refer to EntityFrameworkCore.Extensions.Samples for usage examples
 
 # Build status
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/24d129322030411ba52247aa7c9b0bbf)](https://app.codacy.com/app/nikitasavinov/EntityFrameworkCore.Extensions?utm_source=github.com&utm_medium=referral&utm_content=nikitasavinov/EntityFrameworkCore.Extensions&utm_campaign=Badge_Grade_Dashboard)
 [![Build status](https://ci.appveyor.com/api/projects/status/o1ljbar2tvkt5w7k?svg=true)](https://ci.appveyor.com/project/nikitasavinov/entityframeworkcore-extensions)
 
 # Examples

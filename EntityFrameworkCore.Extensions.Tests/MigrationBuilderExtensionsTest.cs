@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using System.IO;
 using Xunit;
 
 namespace EntityFrameworkCore.Extensions.Tests
@@ -11,7 +12,7 @@ namespace EntityFrameworkCore.Extensions.Tests
         {
             var migrationBuilder = new MigrationBuilder("");
 
-            migrationBuilder.SqlFile("CustomSql\\TestSql.sql");
+            migrationBuilder.SqlFile(Path.Combine("CustomSql", "TestSql.sql"));
 
             Assert.Single(migrationBuilder.Operations);
             Assert.IsType<SqlOperation>(migrationBuilder.Operations[0]);

@@ -21,4 +21,4 @@ jobs:
       run: dotnet build --configuration Release
       
     - name: Run tests
-      run: dotnet test EntityFrameworkCore.Extensions.Tests/EntityFrameworkCore.Extensions.Tests.csproj --no-build
+      run: dotnet test --no-build

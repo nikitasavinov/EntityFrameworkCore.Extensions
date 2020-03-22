@@ -10,7 +10,7 @@ namespace EntityFrameworkCore.Extensions.Services
         {
         }
 
-        protected override void Generate(CreateTableOperation operation, IModel model, MigrationCommandListBuilder builder)
+        protected override void Generate(CreateTableOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate)
         {
             base.Generate(operation, model, builder);
 
@@ -20,9 +20,9 @@ namespace EntityFrameworkCore.Extensions.Services
             }
         }
 
-        protected override void Generate(AddColumnOperation operation, IModel model, MigrationCommandListBuilder builder)
+        protected override void Generate(AddColumnOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate)
         {
-            base.Generate(operation, model, builder);
+            base.Generate(operation, model, builder, terminate);
 
             AddMaskingFunction(operation, builder);
         }
@@ -61,7 +61,7 @@ namespace EntityFrameworkCore.Extensions.Services
             if (addDynamicMask != null)
             {
                 builder.Append("ALTER TABLE ")
-                    .Append(sqlHelper.DelimitIdentifier(column.Table, column.Name))
+                    .Append(sqlHelper.DelimitIdentifier(column.Table, column.Schema))
                     .Append($" ALTER COLUMN {column.Name}")
                     .Append($" ADD MASKED WITH (FUNCTION='{addDynamicMask.Value}')")
                     .Append(sqlHelper.StatementTerminator)
@@ -78,13 +78,8 @@ namespace EntityFrameworkCore.Extensions.Services
                 .EndCommand();
         }
 
-        private bool ColumnAnnotationAdded(string annotrationName, ColumnOperation oldColumn, ColumnOperation newColumn)
-        {
-            return oldColumn.FindAnnotation(annotrationName) == null && newColumn.FindAnnotation(annotrationName) != null;
-        }
+        private bool ColumnAnnotationAdded(string annotrationName, ColumnOperation oldColumn, ColumnOperation newColumn) => oldColumn.FindAnnotation(annotrationName) == null && newColumn.FindAnnotation(annotrationName) != null;
 
-        private bool ColumnAnnotationRemoved(string annotrationName, ColumnOperation oldColumn,
-            ColumnOperation newColumn)
-            => !ColumnAnnotationAdded(annotrationName, oldColumn, newColumn);
+        private bool ColumnAnnotationRemoved(string annotrationName, ColumnOperation oldColumn, ColumnOperation newColumn) => !ColumnAnnotationAdded(annotrationName, oldColumn, newColumn);
     }
 }

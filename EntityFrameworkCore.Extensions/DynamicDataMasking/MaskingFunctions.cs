@@ -7,15 +7,7 @@
     {
         public static string Default() => "default()";
         public static string Email() => "email()";
-
-        public static string Random(int startRange, int endRange)
-        {
-            return $"random({startRange}, {endRange})";
-        }
-
-        public static string Partial(int prefix, string padding, int suffix)
-        {
-            return $"partial({prefix}, \"{padding}\", {suffix})";
-        }
+        public static string Random(int startRange, int endRange) => $"random({startRange}, {endRange})";
+        public static string Partial(int prefix, string padding, int suffix) => $"partial({prefix}, \"{padding}\", {suffix})";
     }
 }

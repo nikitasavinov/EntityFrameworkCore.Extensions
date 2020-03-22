@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace EntityFrameworkCore.Extensions.Samples.Migrations
@@ -13,7 +12,7 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(nullable: true)
                         .Annotation("DynamicDataMasking", "default()"),
                     Surname = table.Column<string>(nullable: true)
@@ -35,7 +34,7 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Created = table.Column<DateTime>(nullable: false),
                     CustomerId = table.Column<int>(nullable: true)
                 },

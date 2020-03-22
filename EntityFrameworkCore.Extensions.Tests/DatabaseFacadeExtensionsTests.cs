@@ -41,7 +41,6 @@ namespace EntityFrameworkCore.Extensions.Tests
         {
             var options = new DbContextOptionsBuilder<TestContext>()
                 .UseSqlite("DataSource=:memory:")
-                .ThrowOnQueryClientEvaluation()
                 .ReplaceService<IMigrator, MockMigrator>()
                 .Options;
 
@@ -57,7 +56,6 @@ namespace EntityFrameworkCore.Extensions.Tests
         {
             var options = new DbContextOptionsBuilder<TestContext>()
                 .UseSqlite("DataSource=:memory:")
-                .ThrowOnQueryClientEvaluation()
                 .ReplaceService<IMigrator, MockMigrator>()
                 .Options;
 

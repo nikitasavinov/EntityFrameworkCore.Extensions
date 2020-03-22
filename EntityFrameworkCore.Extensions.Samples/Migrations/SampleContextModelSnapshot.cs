@@ -15,7 +15,7 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "2.1.0-rtm-30799")
+                .HasAnnotation("ProductVersion", "3.1.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
@@ -23,21 +23,28 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<int>("DiscountCardNumber")
+                        .HasColumnType("int")
                         .HasAnnotation("DynamicDataMasking", "random(10, 100)");
 
-                    b.Property<string>("Name");
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Phone")
+                        .HasColumnType("nvarchar(max)")
                         .HasAnnotation("DynamicDataMasking", "partial(2, \"XX-XX\", 1)");
 
-                    b.Property<string>("SampleProperty1");
+                    b.Property<string>("SampleProperty1")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("SampleProperty2");
+                    b.Property<string>("SampleProperty2")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Surname")
+                        .HasColumnType("nvarchar(max)")
                         .HasAnnotation("DynamicDataMasking", "default()");
 
                     b.HasKey("Id");
@@ -49,11 +56,14 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<DateTime>("Created");
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2");
 
-                    b.Property<int?>("CustomerId");
+                    b.Property<int?>("CustomerId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -64,7 +74,7 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
 
             modelBuilder.Entity("EntityFrameworkCore.Extensions.Samples.Order", b =>
                 {
-                    b.HasOne("EntityFrameworkCore.Extensions.Samples.Customer")
+                    b.HasOne("EntityFrameworkCore.Extensions.Samples.Customer", null)
                         .WithMany("Orders")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade);

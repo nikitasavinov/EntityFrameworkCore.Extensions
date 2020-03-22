@@ -20,7 +20,6 @@ namespace EntityFrameworkCore.Extensions.Samples
                 }
                 optionsBuilder.ReplaceService<IMigrationsSqlGenerator, ExtendedMigrationSqlServerGenerator>(); //Add the support for DynamicDataMasking
                 optionsBuilder.ReplaceService<IMigrationsAnnotationProvider, ExtendedSqlServerMigrationsAnnotationProvider>();
-                optionsBuilder.ThrowOnQueryClientEvaluation(); //Throw when can not generate a query instead of loading everything into memory
 
                 base.OnConfiguring(optionsBuilder);
             }
@@ -66,22 +65,6 @@ namespace EntityFrameworkCore.Extensions.Samples
                 context.Customers.Add(customer);
                 context.SaveChanges();
             }
-
-            using (var context = new SampleContext())
-            {
-                //var customers = context.Customers.Where(t => SomeUnsupportedFunction(t.Phone)).ToList(); - Will throw instead of loading everything into memory
-
-                var customer = context.Customers.First();
-                context.Customers.Remove(customer);
-                context.SaveChanges();
-
-                context.Database.EnsureDeleted();
-            }
-        }
-
-        private static bool SomeUnsupportedFunction(string input)
-        {
-            return input.Length == 2;
         }
     }
 }

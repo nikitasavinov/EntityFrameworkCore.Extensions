@@ -42,7 +42,7 @@ static void Main(string[] args)
 {
     using (var context = new SampleContext())
     {
-        //6. Will not throw when UseInMemoryDatabase is used 
+        //5. Will not throw when UseInMemoryDatabase is used 
         context.Database.MigrateIfSupported();
     }
 }

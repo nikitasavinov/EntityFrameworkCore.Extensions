@@ -6,6 +6,61 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Migrations\20200325195611_AddColumn.cs" />
+    <Compile Remove="Migrations\20200325195611_AddColumn.Designer.cs" />
+    <Compile Remove="Migrations\20200325195829_RemoveColumn.cs" />
+    <Compile Remove="Migrations\20200325195829_RemoveColumn.Designer.cs" />
+    <Compile Remove="Migrations\20200325195948_RemoveColumn.cs" />
+    <Compile Remove="Migrations\20200325195948_RemoveColumn.Designer.cs" />
+    <Compile Remove="Migrations\20200325202110_RemoveColumn.cs" />
+    <Compile Remove="Migrations\20200325202110_RemoveColumn.Designer.cs" />
+    <Compile Remove="Migrations\20200325202129_RemoveColumn2.cs" />
+    <Compile Remove="Migrations\20200325202129_RemoveColumn2.Designer.cs" />
+    <Compile Remove="Migrations\20200325202644_RemoveColumn4.cs" />
+    <Compile Remove="Migrations\20200325202644_RemoveColumn4.Designer.cs" />
+    <Compile Remove="Migrations\20200328124135_Remove.cs" />
+    <Compile Remove="Migrations\20200328124135_Remove.Designer.cs" />
+    <Compile Remove="Migrations\20200328124236_Remove.cs" />
+    <Compile Remove="Migrations\20200328124236_Remove.Designer.cs" />
+    <Compile Remove="Migrations\20200328124611_Remove123.cs" />
+    <Compile Remove="Migrations\20200328124611_Remove123.Designer.cs" />
+    <Compile Remove="Migrations\20200328132328_test.cs" />
+    <Compile Remove="Migrations\20200328132328_test.Designer.cs" />
+    <Compile Remove="Migrations\20200328135359_test1.cs" />
+    <Compile Remove="Migrations\20200328135359_test1.Designer.cs" />
+    <Compile Remove="Migrations\20200328142140_test1234.cs" />
+    <Compile Remove="Migrations\20200328142140_test1234.Designer.cs" />
+    <Compile Remove="Migrations\20200328142203_test123456.cs" />
+    <Compile Remove="Migrations\20200328142203_test123456.Designer.cs" />
+    <Compile Remove="Migrations\20200328143635_test123456.cs" />
+    <Compile Remove="Migrations\20200328143635_test123456.Designer.cs" />
+    <Compile Remove="Migrations\20200328143704_test123456sdf.cs" />
+    <Compile Remove="Migrations\20200328143704_test123456sdf.Designer.cs" />
+    <Compile Remove="Migrations\20200328143729_test123456sdfdfg.cs" />
+    <Compile Remove="Migrations\20200328143729_test123456sdfdfg.Designer.cs" />
+    <Compile Remove="Migrations\20200328143753_test123456sdfdfgsdf.cs" />
+    <Compile Remove="Migrations\20200328143753_test123456sdfdfgsdf.Designer.cs" />
+    <Compile Remove="Migrations\20200328150021_Sample1.cs" />
+    <Compile Remove="Migrations\20200328150021_Sample1.Designer.cs" />
+    <Compile Remove="Migrations\20200328150102_Sample1.cs" />
+    <Compile Remove="Migrations\20200328150102_Sample1.Designer.cs" />
+    <Compile Remove="Migrations\20200328150210_Sample2.cs" />
+    <Compile Remove="Migrations\20200328150210_Sample2.Designer.cs" />
+    <Compile Remove="Migrations\20200328151944_Sample2.cs" />
+    <Compile Remove="Migrations\20200328151944_Sample2.Designer.cs" />
+    <Compile Remove="Migrations\20200328152015_Sample3.cs" />
+    <Compile Remove="Migrations\20200328152015_Sample3.Designer.cs" />
+    <Compile Remove="Migrations\20200328152432_Sample4.cs" />
+    <Compile Remove="Migrations\20200328152432_Sample4.Designer.cs" />
+    <Compile Remove="Migrations\20200328152453_Sample6.cs" />
+    <Compile Remove="Migrations\20200328152453_Sample6.Designer.cs" />
+    <Compile Remove="Migrations\20200328152504_Sample8.cs" />
+    <Compile Remove="Migrations\20200328152504_Sample8.Designer.cs" />
+    <Compile Remove="Migrations\20200328152617_Sample1.cs" />
+    <Compile Remove="Migrations\20200328152617_Sample1.Designer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\EntityFrameworkCore.Extensions\EntityFrameworkCore.Extensions.csproj" />
   </ItemGroup>
 
@@ -20,10 +75,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Migrations\" />
   </ItemGroup>
 
 </Project>

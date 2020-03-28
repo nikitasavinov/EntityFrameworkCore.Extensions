@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EntityFrameworkCore.Extensions.Samples.Migrations
 {
     [DbContext(typeof(Program.SampleContext))]
-    [Migration("20200321204503_SampleMigration")]
-    partial class SampleMigration
+    [Migration("20200328194818_Sample")]
+    partial class Sample
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -36,8 +36,7 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Phone")
-                        .HasColumnType("nvarchar(max)")
-                        .HasAnnotation("DynamicDataMasking", "partial(2, \"XX-XX\", 1)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SampleProperty1")
                         .HasColumnType("nvarchar(max)");
@@ -48,6 +47,9 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                     b.Property<string>("Surname")
                         .HasColumnType("nvarchar(max)")
                         .HasAnnotation("DynamicDataMasking", "default()");
+
+                    b.Property<string>("Surname2")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

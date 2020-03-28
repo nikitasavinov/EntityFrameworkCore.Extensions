@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace EntityFrameworkCore.Extensions.Samples.Migrations
 {
-    public partial class SampleMigration : Migration
+    public partial class Sample : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -13,12 +13,11 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                 {
                     Id = table.Column<int>(nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(nullable: true)
-                        .Annotation("DynamicDataMasking", "default()"),
+                    Name = table.Column<string>(nullable: true),
                     Surname = table.Column<string>(nullable: true)
                         .Annotation("DynamicDataMasking", "default()"),
-                    Phone = table.Column<string>(nullable: true)
-                        .Annotation("DynamicDataMasking", "partial(2, \"XX-XX\", 1)"),
+                    Surname2 = table.Column<string>(nullable: true),
+                    Phone = table.Column<string>(nullable: true),
                     DiscountCardNumber = table.Column<int>(nullable: false)
                         .Annotation("DynamicDataMasking", "random(10, 100)"),
                     SampleProperty1 = table.Column<string>(nullable: true),

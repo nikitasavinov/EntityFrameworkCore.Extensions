@@ -5,7 +5,7 @@ using Xunit;
 
 namespace EntityFrameworkCore.Extensions.Tests
 {
-    public class MigrationBuilderExtensionsTest
+    public class MigrationBuilderExtensionsTests
     {
         [Fact]
         public void SqlFile_should_include_sql_in_migration()

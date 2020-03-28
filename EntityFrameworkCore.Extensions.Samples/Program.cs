@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using EntityFrameworkCore.Extensions.DynamicDataMasking;
-using EntityFrameworkCore.Extensions.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace EntityFrameworkCore.Extensions.Samples
 {
@@ -18,8 +14,7 @@ namespace EntityFrameworkCore.Extensions.Samples
                 {
                     optionsBuilder.UseSqlServer("Data Source =.; Initial Catalog = EntityFrameworkCoreExtensionsSamples; Integrated Security = True;");
                 }
-                optionsBuilder.ReplaceService<IMigrationsSqlGenerator, ExtendedMigrationSqlServerGenerator>(); //Add the support for DynamicDataMasking
-                optionsBuilder.ReplaceService<IMigrationsAnnotationProvider, ExtendedSqlServerMigrationsAnnotationProvider>();
+                optionsBuilder.UseEntityFrameworkCoreExtensions();
 
                 base.OnConfiguring(optionsBuilder);
             }
@@ -30,10 +25,10 @@ namespace EntityFrameworkCore.Extensions.Samples
 
                 modelBuilder.OverrideDeleteBehaviour(DeleteBehavior.Cascade); //Set Cascade as a default delete behaviour
                 
-                modelBuilder.Entity<Customer>().Property(t => t.Surname).HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Default());
-                modelBuilder.Entity<Customer>().Property(t => t.DiscountCardNumber).HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Random(10, 100));
-                modelBuilder.Entity<Customer>().Property(t => t.Phone).HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Partial(2, "XX-XX", 1));
-          }
+                modelBuilder.Entity<Customer>().Property(t => t.Surname).HasDataMask(MaskingFunctions.Default());
+                modelBuilder.Entity<Customer>().Property(t => t.DiscountCardNumber).HasDataMask(MaskingFunctions.Random(10, 100));
+                modelBuilder.Entity<Customer>().Property(t => t.Phone).HasDataMask(MaskingFunctions.Partial(2, "XX-XX", 1));
+            }
 
             public DbSet<Customer> Customers { get; set; }
         }
@@ -41,7 +36,7 @@ namespace EntityFrameworkCore.Extensions.Samples
         static void Main(string[] args)
         {
             using (var context = new SampleContext())
-            {
+            { 
                 context.Database.MigrateIfSupported(); //Will not throw when UseInMemoryDatabase is used 
 
                 //Add a customer

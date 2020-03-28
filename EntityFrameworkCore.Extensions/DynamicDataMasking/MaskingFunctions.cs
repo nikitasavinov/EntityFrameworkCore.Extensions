@@ -1,4 +1,4 @@
-﻿namespace EntityFrameworkCore.Extensions.DynamicDataMasking
+﻿namespace EntityFrameworkCore.Extensions
 {
     /// <summary>
     /// Full description of different masking functions is available in <see href="https://docs.microsoft.com/en-us/sql/relational-databases/security/dynamic-data-masking">MS documentation</see>

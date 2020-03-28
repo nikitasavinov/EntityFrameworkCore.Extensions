@@ -16,9 +16,8 @@ public class SampleContext : DbContext
         //1. Throw when can not generate a query instead of loading everything into memory
         optionsBuilder.ThrowOnQueryClientEvaluation(); 
         
-        //2. Add the support for DynamicDataMasking
-        optionsBuilder.ReplaceService<IMigrationsSqlGenerator, ExtendedMigrationSqlServerGenerator>();
-        optionsBuilder.ReplaceService<IMigrationsAnnotationProvider, ExtendedSqlServerMigrationsAnnotationProvider>();
+        //2. Use EntityFrameworkCoreExtensions (add DynamicDataMasking support)
+        optionsBuilder.UseEntityFrameworkCoreExtensions();
 
         base.OnConfiguring(optionsBuilder);
     }
@@ -30,28 +29,13 @@ public class SampleContext : DbContext
         //3. Set Cascade as a default delete behaviour
         modelBuilder.OverrideDeleteBehaviour(DeleteBehavior.Cascade); 
         
-         //4. Add dynamic data masking (https://docs.microsoft.com/en-us/sql/relational-databases/security/dynamic-data-masking)
-        modelBuilder.Entity<Customer>()
-            .Property(t => t.Surname)
-            .HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Default());
-        modelBuilder.Entity<Customer>()
-            .Property(t => t.DiscountCardNumber)
-            .HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Random(10, 100));
-        modelBuilder.Entity<Customer>()
-            .Property(t => t.Phone)
-            .HasAnnotation(AnnotationConstants.DynamicDataMasking, MaskingFunctions.Partial(2, "XX-XX", 1));
+        //4. Add dynamic data masking (https://docs.microsoft.com/en-us/sql/relational-databases/security/dynamic-data-masking)
+        modelBuilder.Entity<Customer>().Property(t => t.Surname).HasDataMask(MaskingFunctions.Default());
+        modelBuilder.Entity<Customer>().Property(t => t.DiscountCardNumber).HasDataMask(MaskingFunctions.Random(10, 100));
+        modelBuilder.Entity<Customer>().Property(t => t.Phone).HasDataMask(MaskingFunctions.Partial(2, "XX-XX", 1));
     }
 
     public DbSet<Customer> Customers { get; set; }
-}
-    
-public class Customer
-{
-    public int Id { get; set; }
-
-    //5. Another way to add DynamicDataMask
-    [DataMasking(MaskingFunction = "default()")]
-    public string Name { get; set; } 
 }
 
 static void Main(string[] args)
@@ -59,10 +43,7 @@ static void Main(string[] args)
     using (var context = new SampleContext())
     {
         //6. Will not throw when UseInMemoryDatabase is used 
-        context.Database.MigrateIfSupported(); 
-
-        //7. Will throw instead of loading everything into memory
-        var customers = context.Customers.Where(t => SomeUnsupportedFunction(t.Phone)).ToList(); 
+        context.Database.MigrateIfSupported();
     }
 }
 ```

@@ -80,6 +80,6 @@ namespace EntityFrameworkCore.Extensions.Services
 
         private bool ColumnAnnotationAdded(string annotrationName, ColumnOperation oldColumn, ColumnOperation newColumn) => oldColumn.FindAnnotation(annotrationName) == null && newColumn.FindAnnotation(annotrationName) != null;
 
-        private bool ColumnAnnotationRemoved(string annotrationName, ColumnOperation oldColumn, ColumnOperation newColumn) => !ColumnAnnotationAdded(annotrationName, oldColumn, newColumn);
+        private bool ColumnAnnotationRemoved(string annotrationName, ColumnOperation oldColumn, ColumnOperation newColumn) => oldColumn.FindAnnotation(annotrationName) != null && newColumn.FindAnnotation(annotrationName) == null;
     }
 }

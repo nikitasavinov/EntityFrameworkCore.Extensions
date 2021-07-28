@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
 namespace EntityFrameworkCore.Extensions.Services
 {
-    public class ExtendedMigrationSqlServerGenerator : SqlServerMigrationsSqlGenerator
+    public class ExtendedSqlServerMigrationsSqlGenerator : SqlServerMigrationsSqlGenerator
     {
-        public ExtendedMigrationSqlServerGenerator(MigrationsSqlGeneratorDependencies dependencies, IRelationalAnnotationProvider relationalAnnotationProvider) : base(dependencies, relationalAnnotationProvider)
+        public ExtendedSqlServerMigrationsSqlGenerator(MigrationsSqlGeneratorDependencies dependencies, IRelationalAnnotationProvider relationalAnnotationProvider) : base(dependencies, relationalAnnotationProvider)
         {
         }
 

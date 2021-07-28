@@ -22,7 +22,7 @@ namespace EntityFrameworkCore.Extensions.Tests
             var migrationSqlGenerator = context.GetService<IMigrationsSqlGenerator>();
             var relationalAnnotationProvider = context.GetService<IRelationalAnnotationProvider>();
 
-            Assert.IsType<ExtendedMigrationSqlServerGenerator>(migrationSqlGenerator);
+            Assert.IsType<ExtendedSqlServerMigrationsSqlGenerator>(migrationSqlGenerator);
             Assert.IsType<ExtendedSqlServerAnnotationProvider>(relationalAnnotationProvider);
         }
     }

@@ -1,6 +1,7 @@
 # EntityFrameworkCore.Extensions
 
-Please refer to EntityFrameworkCore.Extensions.Samples for usage examples
+Please refer to EntityFrameworkCore.Extensions.Samples for usage examples.
+EF Core 5.x support is in beta: https://www.nuget.org/packages/EntityFrameworkCore.Extensions/5.0.0-beta
 
 # Build status
 ![Build](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/workflows/Build/badge.svg)

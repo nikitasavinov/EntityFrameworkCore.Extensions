@@ -15,8 +15,8 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "3.1.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
+                .HasAnnotation("ProductVersion", "5.0.8")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
             modelBuilder.Entity("EntityFrameworkCore.Extensions.Samples.Customer", b =>
@@ -34,7 +34,8 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Phone")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasAnnotation("DynamicDataMasking", "partial(2, \"XX-XX\", 1)");
 
                     b.Property<string>("SampleProperty1")
                         .HasColumnType("nvarchar(max)");
@@ -80,6 +81,11 @@ namespace EntityFrameworkCore.Extensions.Samples.Migrations
                         .WithMany("Orders")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("EntityFrameworkCore.Extensions.Samples.Customer", b =>
+                {
+                    b.Navigation("Orders");
                 });
 #pragma warning restore 612, 618
         }

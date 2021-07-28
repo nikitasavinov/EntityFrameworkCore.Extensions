@@ -86,6 +86,11 @@ namespace EntityFrameworkCore.Extensions.Tests
             {
                 throw new NotImplementedException();
             }
+
+            public string GenerateScript(string fromMigration = null, string toMigration = null, MigrationsSqlGenerationOptions options = MigrationsSqlGenerationOptions.Default)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

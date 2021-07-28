@@ -1,6 +1,7 @@
 ﻿using EntityFrameworkCore.Extensions.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using System;
 using Xunit;
@@ -19,10 +20,10 @@ namespace EntityFrameworkCore.Extensions.Tests
             var context = (IInfrastructure<IServiceProvider>)new TestContext(builder);
 
             var migrationSqlGenerator = context.GetService<IMigrationsSqlGenerator>();
-            var migrationAnnotationsProvider = context.GetService<IMigrationsAnnotationProvider>();
+            var relationalAnnotationProvider = context.GetService<IRelationalAnnotationProvider>();
 
             Assert.IsType<ExtendedMigrationSqlServerGenerator>(migrationSqlGenerator);
-            Assert.IsType<ExtendedSqlServerMigrationsAnnotationProvider>(migrationAnnotationsProvider);
+            Assert.IsType<ExtendedSqlServerAnnotationProvider>(relationalAnnotationProvider);
         }
     }
 }

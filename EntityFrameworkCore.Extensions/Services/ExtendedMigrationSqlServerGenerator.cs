@@ -6,7 +6,7 @@ namespace EntityFrameworkCore.Extensions.Services
 {
     public class ExtendedMigrationSqlServerGenerator : SqlServerMigrationsSqlGenerator
     {
-        public ExtendedMigrationSqlServerGenerator(MigrationsSqlGeneratorDependencies dependencies, IMigrationsAnnotationProvider migrationsAnnotations) : base(dependencies, migrationsAnnotations)
+        public ExtendedMigrationSqlServerGenerator(MigrationsSqlGeneratorDependencies dependencies, IRelationalAnnotationProvider relationalAnnotationProvider) : base(dependencies, relationalAnnotationProvider)
         {
         }
 
@@ -71,10 +71,13 @@ namespace EntityFrameworkCore.Extensions.Services
 
         private void DropMaskingFunction(AlterColumnOperation operation, MigrationCommandListBuilder builder)
         {
+            var sqlHelper = Dependencies.SqlGenerationHelper;
+
             builder.Append("ALTER TABLE ")
                 .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))
                 .Append($" ALTER COLUMN {operation.Name}")
                 .Append($" DROP MASKED")
+                .Append(sqlHelper.StatementTerminator)
                 .EndCommand();
         }
 

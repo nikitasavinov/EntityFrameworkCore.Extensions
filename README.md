@@ -1,12 +1,11 @@
 # EntityFrameworkCore.Extensions
 
 Please refer to EntityFrameworkCore.Extensions.Samples for usage examples.
-EF Core 5.x support is in beta: https://www.nuget.org/packages/EntityFrameworkCore.Extensions/5.0.0-beta
 
 # Build status
 ![Build](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/workflows/Build/badge.svg)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/24d129322030411ba52247aa7c9b0bbf)](https://app.codacy.com/app/nikitasavinov/EntityFrameworkCore.Extensions?utm_source=github.com&utm_medium=referral&utm_content=nikitasavinov/EntityFrameworkCore.Extensions&utm_campaign=Badge_Grade_Dashboard)
-[![NugetPackage](https://buildstats.info/nuget/EntityFrameworkCore.Extensions)](https://www.nuget.org/packages/EntityFrameworkCore.Extensions)
+[![NugetPackage](https://buildstats.info/nuget/EntityFrameworkCore.Extensions?includePreReleases=true)](https://www.nuget.org/packages/EntityFrameworkCore.Extensions)
 
 # Examples
 

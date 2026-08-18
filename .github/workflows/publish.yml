@@ -148,6 +148,7 @@ jobs:
           fi
 
           gh release create "$PACKAGE_VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
             artifacts/packages/*.nupkg \
             artifacts/packages/*.snupkg \
             --target "$GITHUB_SHA" \

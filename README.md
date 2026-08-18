@@ -1,7 +1,7 @@
 # EntityFrameworkCore.Extensions
 
 [![CI](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml/badge.svg)](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml)
-[![NuGet](https://img.shields.io/nuget/v/EntityFrameworkCore.Extensions.svg)](https://www.nuget.org/packages/EntityFrameworkCore.Extensions)
+[![NuGet downloads](https://img.shields.io/nuget/dt/EntityFrameworkCore.Extensions?logo=nuget&label=downloads&color=004880)](https://www.nuget.org/packages/EntityFrameworkCore.Extensions/)
 
 SQL Server extensions for Entity Framework Core 10 and .NET 10.
 

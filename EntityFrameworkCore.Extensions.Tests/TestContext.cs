@@ -12,12 +12,12 @@ namespace EntityFrameworkCore.Extensions.Tests
         {
         }
 
-        public DbSet<TestModel> TestModels { get; set; }
+        public DbSet<TestModel> TestModels => Set<TestModel>();
     }
 
     public class TestModel
     {
         public int Id { get; set; }
-        public string Data { get; set; }
+        public string Data { get; set; } = string.Empty;
     }
 }

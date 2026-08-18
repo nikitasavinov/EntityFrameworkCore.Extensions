@@ -1,32 +1,65 @@
-﻿using System.Collections.Generic;
-using System.Linq;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.SqlServer.Metadata.Internal;
 
-namespace EntityFrameworkCore.Extensions.Services
+namespace EntityFrameworkCore.Extensions.Services;
+
+#pragma warning disable EF1001 // Extending SQL Server's annotation provider requires its provider-internal implementation.
+
+/// <summary>
+/// Propagates EntityFrameworkCore.Extensions annotations to the SQL Server relational model.
+/// </summary>
+internal sealed class ExtendedSqlServerAnnotationProvider : SqlServerAnnotationProvider
 {
-    public class ExtendedSqlServerAnnotationProvider : SqlServerAnnotationProvider
+    /// <summary>Initializes a new annotation provider instance.</summary>
+    /// <param name="dependencies">The relational annotation provider dependencies.</param>
+    public ExtendedSqlServerAnnotationProvider(RelationalAnnotationProviderDependencies dependencies) : base(dependencies)
     {
-        public ExtendedSqlServerAnnotationProvider(RelationalAnnotationProviderDependencies dependencies) : base(dependencies)
+    }
+
+    /// <inheritdoc />
+    public override IEnumerable<IAnnotation> For(IColumn column, bool designTime)
+    {
+        foreach (var annotation in base.For(column, designTime))
         {
+            yield return annotation;
         }
 
-
-        public override IEnumerable<IAnnotation> For(IColumn column)
+        if (!designTime)
         {
-            foreach (var annotation in base.For(column))
-            {
-                yield return annotation;
-            }
-
-            var properties = column.PropertyMappings.Select(m => m.Property);
-            var annotations = properties.SelectMany(p => p.GetAnnotations()).GroupBy(a => a.Name).Select(g => g.First());
-
-            foreach (var annotation in annotations.Where(x => x.Name == AnnotationConstants.DynamicDataMasking))
-            {
-                yield return annotation;
-            }
+            yield break;
         }
+
+        var maskingAnnotations = column.PropertyMappings
+            .Select(mapping => mapping.Property.FindAnnotation(AnnotationConstants.DynamicDataMasking))
+            .OfType<IAnnotation>()
+            .ToList();
+        if (maskingAnnotations.Count == 0)
+        {
+            yield break;
+        }
+
+        var maskingFunctions = maskingAnnotations
+            .Select(annotation => DynamicDataMaskingAnnotation.GetMaskingFunction(
+                annotation,
+                column.Table.Schema,
+                column.Table.Name,
+                column.Name))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        if (maskingFunctions.Count > 1)
+        {
+            var columnName = DynamicDataMaskingAnnotation.FormatColumnName(
+                column.Table.Schema,
+                column.Table.Name,
+                column.Name);
+            throw new InvalidOperationException(
+                $"Column '{columnName}' has conflicting dynamic data masks: " +
+                $"{string.Join(", ", maskingFunctions.Select(mask => $"'{mask}'"))}.");
+        }
+
+        yield return maskingAnnotations[0];
     }
 }
+
+#pragma warning restore EF1001

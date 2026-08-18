@@ -1,7 +1,12 @@
-﻿namespace EntityFrameworkCore.Extensions
+namespace EntityFrameworkCore.Extensions;
+
+/// <summary>
+/// Contains annotation names used by EntityFrameworkCore.Extensions.
+/// </summary>
+public static class AnnotationConstants
 {
-    public static class AnnotationConstants
-    {
-        public const string DynamicDataMasking = "DynamicDataMasking";
-    }
+    /// <summary>
+    /// Identifies a SQL Server dynamic data masking annotation.
+    /// </summary>
+    public const string DynamicDataMasking = "DynamicDataMasking";
 }

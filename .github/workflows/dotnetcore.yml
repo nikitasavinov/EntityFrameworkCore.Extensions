@@ -1,24 +1,116 @@
-name: Build
+name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
 
 jobs:
-  build:
+  build-and-test:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - name: Restore tools
+        run: dotnet tool restore
+      - name: Restore packages
+        run: dotnet restore EntityFrameworkCore.Extensions.sln --locked-mode
+      - name: Build
+        run: dotnet build EntityFrameworkCore.Extensions.sln --configuration Release --no-restore
+      - name: Verify sample migration snapshot
+        if: runner.os == 'Linux'
+        run: >-
+          dotnet tool run dotnet-ef migrations has-pending-model-changes
+          --project EntityFrameworkCore.Extensions.Samples
+          --startup-project EntityFrameworkCore.Extensions.Samples
+          --configuration Release --no-build
+      - name: Test
+        run: >-
+          dotnet test --solution EntityFrameworkCore.Extensions.sln
+          --configuration Release --no-build --minimum-expected-tests 35
+
+  sqlserver-integration:
+    name: SQL Server integration
+    runs-on: ubuntu-latest
+    env:
+      EFCORE_EXTENSIONS_SQLSERVER: >-
+        Server=localhost,1433;Database=master;User ID=sa;
+        Password=EfCoreExtensions_2026!;Encrypt=True;TrustServerCertificate=True
+
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2025-CU8-ubuntu-24.04
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: "EfCoreExtensions_2026!"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'EfCoreExtensions_2026!' -C -Q 'SELECT 1' -b"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+          --health-start-period 20s
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - name: Restore packages
+        run: dotnet restore EntityFrameworkCore.Extensions.sln --locked-mode
+      - name: Build
+        run: dotnet build EntityFrameworkCore.Extensions.sln --configuration Release --no-restore
+      - name: Test against SQL Server
+        run: >-
+          dotnet test --solution EntityFrameworkCore.Extensions.sln
+          --configuration Release --no-build --minimum-expected-tests 35 --fail-skips on
+
+  package:
+    name: Validate package
+    needs: [build-and-test, sqlserver-integration]
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 3.1.101
-    - name: Build with dotnet
-      run: dotnet build --configuration Release
-      
-    - name: Run tests
-      run: dotnet test --configuration Release --no-build
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - name: Restore packages
+        run: dotnet restore EntityFrameworkCore.Extensions.sln --locked-mode
+      - name: Pack
+        run: >-
+          dotnet pack EntityFrameworkCore.Extensions/EntityFrameworkCore.Extensions.csproj
+          --configuration Release --no-restore --output artifacts/packages
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: |
+            artifacts/packages/*.nupkg
+            artifacts/packages/*.snupkg
+          if-no-files-found: error

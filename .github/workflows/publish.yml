@@ -1,0 +1,140 @@
+name: Publish NuGet package
+run-name: Publish EntityFrameworkCore.Extensions ${{ inputs.package_version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_version:
+        description: NuGet package version (for example, 10.0.0-beta.1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nuget-publish
+  cancel-in-progress: false
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+  PACKAGE_VERSION: ${{ inputs.package_version }}
+
+jobs:
+  validate:
+    name: Validate release request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/master" ]]; then
+            echo "::error::NuGet packages can only be published from master."
+            exit 1
+          fi
+
+  build:
+    name: Build and package
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EFCORE_EXTENSIONS_SQLSERVER: >-
+        Server=localhost,1433;Database=master;User ID=sa;
+        Password=EfCoreExtensions_2026!;Encrypt=True;TrustServerCertificate=True
+
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2025-CU8-ubuntu-24.04
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: "EfCoreExtensions_2026!"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'EfCoreExtensions_2026!' -C -Q 'SELECT 1' -b"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+          --health-start-period 20s
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - name: Restore tools
+        run: dotnet tool restore
+      - name: Restore packages
+        run: dotnet restore EntityFrameworkCore.Extensions.sln --locked-mode
+      - name: Build
+        run: dotnet build EntityFrameworkCore.Extensions.sln --configuration Release --no-restore
+      - name: Verify sample migration snapshot
+        run: >-
+          dotnet tool run dotnet-ef migrations has-pending-model-changes
+          --project EntityFrameworkCore.Extensions.Samples
+          --startup-project EntityFrameworkCore.Extensions.Samples
+          --configuration Release --no-build
+      - name: Test against SQL Server
+        run: >-
+          dotnet test --solution EntityFrameworkCore.Extensions.sln
+          --configuration Release --no-build --minimum-expected-tests 35 --fail-skips on
+      - name: Pack
+        run: >-
+          dotnet pack EntityFrameworkCore.Extensions/EntityFrameworkCore.Extensions.csproj
+          --configuration Release --no-restore --version "$PACKAGE_VERSION"
+          --output artifacts/packages
+      - name: Verify package files
+        run: |
+          shopt -s nullglob
+          packages=(artifacts/packages/*.nupkg)
+          symbols=(artifacts/packages/*.snupkg)
+          if [[ ${#packages[@]} -ne 1 || ${#symbols[@]} -ne 1 ]]; then
+            echo "::error::Expected exactly one NuGet package and one symbol package."
+            exit 1
+          fi
+      - name: Upload packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuget-packages
+          path: |
+            artifacts/packages/*.nupkg
+            artifacts/packages/*.snupkg
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish to NuGet.org
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: nuget
+      url: https://www.nuget.org/packages/EntityFrameworkCore.Extensions/${{ inputs.package_version }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Download packages
+        uses: actions/download-artifact@v8
+        with:
+          name: nuget-packages
+          path: artifacts/packages
+      - name: NuGet login
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Publish package
+        run: >-
+          dotnet nuget push
+          "artifacts/packages/*.nupkg"
+          --source https://api.nuget.org/v3/index.json
+          --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"

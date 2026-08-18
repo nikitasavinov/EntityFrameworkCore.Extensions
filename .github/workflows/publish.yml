@@ -115,7 +115,7 @@ jobs:
       name: nuget
       url: https://www.nuget.org/packages/EntityFrameworkCore.Extensions/${{ inputs.package_version }}
     permissions:
-      contents: read
+      contents: write
       id-token: write
 
     steps:
@@ -138,3 +138,19 @@ jobs:
           "artifacts/packages/*.nupkg"
           --source https://api.nuget.org/v3/index.json
           --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release_flags=()
+          if [[ "$PACKAGE_VERSION" == *-* ]]; then
+            release_flags+=(--prerelease)
+          fi
+
+          gh release create "$PACKAGE_VERSION" \
+            artifacts/packages/*.nupkg \
+            artifacts/packages/*.snupkg \
+            --target "$GITHUB_SHA" \
+            --title "EntityFrameworkCore.Extensions $PACKAGE_VERSION" \
+            --generate-notes \
+            "${release_flags[@]}"

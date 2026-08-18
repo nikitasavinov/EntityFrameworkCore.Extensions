@@ -138,6 +138,14 @@ jobs:
           "artifacts/packages/*.nupkg"
           --source https://api.nuget.org/v3/index.json
           --api-key "${{ steps.login.outputs.NUGET_API_KEY }}"
+      - name: Create GitHub release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api --method POST
+          "repos/$GITHUB_REPOSITORY/git/refs"
+          --field "ref=refs/tags/$PACKAGE_VERSION"
+          --field "sha=$GITHUB_SHA"
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -154,4 +162,5 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "EntityFrameworkCore.Extensions $PACKAGE_VERSION" \
             --generate-notes \
+            --verify-tag \
             "${release_flags[@]}"

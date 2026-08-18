@@ -11,57 +11,59 @@ namespace EntityFrameworkCore.Extensions.Tests
     public class DatabaseFacadeExtensionsTests
     {
         [Fact]
-        public void MigrateIfSupported_should_not_fail_for_inmemory()
+        public void MigrateIfSupportedDoesNotFailForInMemory()
         {
             var options = new DbContextOptionsBuilder<TestContext>()
-                .UseInMemoryDatabase("MigrateIfSupported_should_not_fail_for_inmemory")
+                .UseInMemoryDatabase(nameof(MigrateIfSupportedDoesNotFailForInMemory))
                 .Options;
 
-            var context = new TestContext(options);
+            using var context = new TestContext(options);
 
             context.Database.MigrateIfSupported();
             Assert.Throws<InvalidOperationException>(() => context.Database.Migrate());
         }
 
         [Fact]
-        public async Task MigrateIfSupportedAsync_should_not_fail_for_inmemory()
+        public async Task MigrateIfSupportedAsyncDoesNotFailForInMemory()
         {
             var options = new DbContextOptionsBuilder<TestContext>()
-                .UseInMemoryDatabase("MigrateIfSupported_should_not_fail_for_inmemory")
+                .UseInMemoryDatabase(nameof(MigrateIfSupportedAsyncDoesNotFailForInMemory))
                 .Options;
 
-            var context = new TestContext(options);
+            await using var context = new TestContext(options);
 
-            context.Database.MigrateIfSupported();
-            await Assert.ThrowsAsync<InvalidOperationException>(() => context.Database.MigrateAsync());
+            Func<DatabaseFacade, Task> migrateIfSupportedAsync = DatabaseFacadeExtensions.MigrateIfSupportedAsync;
+            await migrateIfSupportedAsync(context.Database);
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => context.Database.MigrateAsync(Xunit.TestContext.Current.CancellationToken));
         }
 
         [Fact]
-        public void MigrateIfSupported_should_migrate_for_sqlite()
+        public void MigrateIfSupportedMigratesForRelationalProvider()
         {
             var options = new DbContextOptionsBuilder<TestContext>()
-                .UseSqlite("DataSource=:memory:")
+                .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=NotUsed")
                 .ReplaceService<IMigrator, MockMigrator>()
                 .Options;
 
-            var context = new TestContext(options);
-            
+            using var context = new TestContext(options);
+
             context.Database.MigrateIfSupported();
             var migrator = context.GetService<IMigrator>() as MockMigrator;
             Assert.True(migrator?.MigrateCalled ?? false);
         }
 
         [Fact]
-        public async Task MigrateIfSupportedAsync_should_migrate_for_sqlite()
+        public async Task MigrateIfSupportedAsyncMigratesForRelationalProvider()
         {
             var options = new DbContextOptionsBuilder<TestContext>()
-                .UseSqlite("DataSource=:memory:")
+                .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=NotUsed")
                 .ReplaceService<IMigrator, MockMigrator>()
                 .Options;
 
-            var context = new TestContext(options);
+            await using var context = new TestContext(options);
 
-            await context.Database.MigrateIfSupportedAsync();
+            await context.Database.MigrateIfSupportedAsync(Xunit.TestContext.Current.CancellationToken);
             var migrator = context.GetService<IMigrator>() as MockMigrator;
             Assert.True(migrator?.MigrateAsyncCalled ?? false);
         }
@@ -71,26 +73,26 @@ namespace EntityFrameworkCore.Extensions.Tests
             public bool MigrateCalled { get; private set; }
             public bool MigrateAsyncCalled { get; private set; }
 
-            public void Migrate(string targetMigration = null)
+            public void Migrate(string? targetMigration = null)
             {
                 MigrateCalled = true;
             }
 
-            public Task MigrateAsync(string targetMigration = null, CancellationToken cancellationToken = new CancellationToken())
+            public Task MigrateAsync(string? targetMigration = null, CancellationToken cancellationToken = default)
             {
                 MigrateAsyncCalled = true;
                 return Task.CompletedTask;
             }
 
-            public string GenerateScript(string fromMigration = null, string toMigration = null, bool idempotent = false)
+            public string GenerateScript(
+                string? fromMigration = null,
+                string? toMigration = null,
+                MigrationsSqlGenerationOptions options = MigrationsSqlGenerationOptions.Default)
             {
                 throw new NotImplementedException();
             }
 
-            public string GenerateScript(string fromMigration = null, string toMigration = null, MigrationsSqlGenerationOptions options = MigrationsSqlGenerationOptions.Default)
-            {
-                throw new NotImplementedException();
-            }
+            public bool HasPendingModelChanges() => false;
         }
     }
 }

@@ -10,46 +10,9 @@ using Xunit;
 
 namespace EntityFrameworkCore.Extensions.Tests;
 
-public sealed class DynamicDataMaskingTests
+public sealed class DynamicDataMaskingSqlGeneratorTests
 {
     private const string ConnectionString = "Server=(localdb)\\mssqllocaldb;Database=NotUsed";
-
-    [Fact]
-    public void DefaultMaskingFunctionGeneratesExpectedExpression()
-        => Assert.Equal("default()", MaskingFunctions.Default());
-
-    [Fact]
-    public void EmailMaskingFunctionGeneratesExpectedExpression()
-        => Assert.Equal("email()", MaskingFunctions.Email());
-
-    [Fact]
-    public void ParameterizedMaskingFunctionsGenerateExpectedExpressions()
-    {
-        Assert.Equal("random(10, 100)", MaskingFunctions.Random(10, 100));
-        Assert.Equal("partial(2, \"XX-XX\", 1)", MaskingFunctions.Partial(2, "XX-XX", 1));
-    }
-
-    [Fact]
-    public void PartialMaskingFunctionRejectsDoubleQuoteInPadding()
-    {
-        var exception = Assert.Throws<ArgumentException>(() => MaskingFunctions.Partial(1, "a\"b", 1));
-
-        Assert.Equal("padding", exception.ParamName);
-    }
-
-    [Fact]
-    public void HasDataMaskStoresAnnotationAndReturnsPropertyBuilder()
-    {
-        var modelBuilder = new ModelBuilder();
-        var propertyBuilder = modelBuilder.Entity<SecretEntity>().Property(entity => entity.Secret);
-
-        var result = propertyBuilder.HasDataMask(MaskingFunctions.Email());
-
-        Assert.Same(propertyBuilder, result);
-        Assert.Equal(
-            MaskingFunctions.Email(),
-            propertyBuilder.Metadata.FindAnnotation(AnnotationConstants.DynamicDataMasking)?.Value);
-    }
 
     [Fact]
     public void CreatingMaskedModelPropagatesAnnotationAndGeneratesMaskSql()
@@ -353,49 +316,6 @@ public sealed class DynamicDataMaskingTests
         Assert.Contains(AnnotationConstants.DynamicDataMasking, exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void RuntimeModelDoesNotContainMigrationMaskingAnnotation()
-    {
-        using var context = CreateMaskedContext();
-
-        var runtimeColumn = context.Model.GetRelationalModel()
-            .FindTable("Order", "odd]schema")!
-            .FindColumn("Select]")!;
-        var designColumn = context.GetService<IDesignTimeModel>().Model.GetRelationalModel()
-            .FindTable("Order", "odd]schema")!
-            .FindColumn("Select]")!;
-
-        Assert.Null(runtimeColumn.FindAnnotation(AnnotationConstants.DynamicDataMasking));
-        Assert.Equal(
-            MaskingFunctions.Default(),
-            designColumn.FindAnnotation(AnnotationConstants.DynamicDataMasking)?.Value);
-    }
-
-    [Fact]
-    public void ConflictingMasksOnSharedColumnAreRejected()
-    {
-        var options = new DbContextOptionsBuilder<ConflictingSharedColumnContext>()
-            .UseSqlServer(ConnectionString)
-            .UseEntityFrameworkCoreExtensions()
-            .Options;
-        using var context = new ConflictingSharedColumnContext(options);
-
-        var exception = Assert.Throws<InvalidOperationException>(
-            () => _ = context.GetService<IDesignTimeModel>().Model.GetRelationalModel());
-
-        Assert.Contains("conflicting dynamic data masks", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("SharedSecrets.Secret", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void HasDataMaskRejectsEmptyPattern()
-    {
-        var modelBuilder = new ModelBuilder();
-        var propertyBuilder = modelBuilder.Entity<SecretEntity>().Property(entity => entity.Secret);
-
-        Assert.Throws<ArgumentException>(() => propertyBuilder.HasDataMask(" "));
-    }
-
     private static MaskedContext CreateMaskedContext()
     {
         var options = new DbContextOptionsBuilder<MaskedContext>()
@@ -541,47 +461,6 @@ public sealed class DynamicDataMaskingTests
     }
 
     private sealed class SecretEntity
-    {
-        public int Id { get; set; }
-        public string Secret { get; set; } = string.Empty;
-    }
-
-    private sealed class ConflictingSharedColumnContext(DbContextOptions<ConflictingSharedColumnContext> options)
-        : DbContext(options)
-    {
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<SharedColumnPrincipal>(entityBuilder =>
-            {
-                entityBuilder.ToTable("SharedSecrets");
-                entityBuilder.HasKey(entity => entity.Id);
-                entityBuilder.Property(entity => entity.Secret)
-                    .HasColumnName("Secret")
-                    .HasDataMask(MaskingFunctions.Default());
-                entityBuilder.HasOne(entity => entity.Details)
-                    .WithOne()
-                    .HasForeignKey<SharedColumnDetails>(entity => entity.Id);
-            });
-
-            modelBuilder.Entity<SharedColumnDetails>(entityBuilder =>
-            {
-                entityBuilder.ToTable("SharedSecrets");
-                entityBuilder.HasKey(entity => entity.Id);
-                entityBuilder.Property(entity => entity.Secret)
-                    .HasColumnName("Secret")
-                    .HasDataMask(MaskingFunctions.Email());
-            });
-        }
-    }
-
-    private sealed class SharedColumnPrincipal
-    {
-        public int Id { get; set; }
-        public string Secret { get; set; } = string.Empty;
-        public SharedColumnDetails Details { get; set; } = null!;
-    }
-
-    private sealed class SharedColumnDetails
     {
         public int Id { get; set; }
         public string Secret { get; set; } = string.Empty;

@@ -7,13 +7,21 @@ SQL Server extensions for Entity Framework Core 10 and .NET 10.
 
 See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Samples) for more usage examples.
 
+## Features
+
+This project extends EFCore with a few major features:
+- SQL Server dynamic data masking configured through the EF Core fluent API, with migrations for adding, changing, and removing masks.
+- SQL Server `geography` and `geometry` spatial indexes with auto-grid tessellation, bounding-box configuration, and cells-per-object configuration.
+
+And some minor ones too:
+- Default delete-behavior overrides for an entire EF Core model.
+- SQL migration scripts loaded from external files.
+- Safe synchronous and asynchronous migration helpers that remain no-ops for non-relational providers such as InMemory.
+
 ## Changelog
 
 ### Upcoming
 
-- Dynamic data masking polish: scoped `GRANT` / `REVOKE UNMASK` support and remaining alter/drop edge cases.
-- Row-level security through fluent annotations and migration SQL.
-- SQL Server ledger table support.
 - More to come.
 
 ### 10.0.0
@@ -24,6 +32,11 @@ EntityFrameworkCore.Extensions has been revived and modernized after several yea
 - Strengthened dynamic data masking migrations, including mask changes, removals, and safer SQL generation.
 - Kept registration inert for non-relational providers such as InMemory, with migration helpers remaining no-ops.
 - Added current Linux and Windows CI, package validation, and integration tests against a real SQL Server instance.
+- Added SQL Server `geography` and `geometry` spatial indexes with auto-grid tessellation, fluent configuration, and migrations.
+- Added bounding-box and cells-per-object configuration with validation for unsupported spatial-index shapes and options.
+- Added sample models and a migration demonstrating both spatial data types.
+- Added live SQL Server verification of spatial-index metadata, queries, and execution plans.
+- Reorganized the library and tests into feature-oriented folders for future extensions.
 
 ## Install
 
@@ -82,3 +95,28 @@ public static class Program
     }
 }
 ```
+
+## Spatial indexes
+
+Install `Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite`, enable it in `UseSqlServer()`, and configure the index alongside the rest of the entity model:
+
+```csharp
+optionsBuilder.UseSqlServer(
+    connectionString,
+    sqlServer => sqlServer.UseNetTopologySuite());
+optionsBuilder.UseEntityFrameworkCoreExtensions();
+
+modelBuilder.Entity<Place>()
+    .HasSpatialIndex(place => place.Location)
+    .HasDatabaseName("SIX_Places_Location");
+
+modelBuilder.Entity<Region>()
+    .HasSpatialIndex(
+        region => region.Boundary,
+        spatial => spatial
+            .HasBoundingBox(-180, -90, 180, 90)
+            .HasCellsPerObject(32))
+    .HasDatabaseName("SIX_Regions_Boundary");
+```
+
+`geography` uses `GEOGRAPHY_AUTO_GRID`. `geometry` uses `GEOMETRY_AUTO_GRID` and requires a bounding box.

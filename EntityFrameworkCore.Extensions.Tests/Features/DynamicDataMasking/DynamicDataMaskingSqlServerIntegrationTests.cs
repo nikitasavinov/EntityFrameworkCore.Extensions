@@ -1,20 +1,17 @@
-using System.Data.Common;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using static EntityFrameworkCore.Extensions.Tests.SqlServerIntegrationTestDatabase;
 using Xunit;
 
 namespace EntityFrameworkCore.Extensions.Tests;
 
-public sealed class SqlServerIntegrationTests
+public sealed class DynamicDataMaskingSqlServerIntegrationTests
 {
-    private const string ConnectionStringEnvironmentVariable = "EFCORE_EXTENSIONS_SQLSERVER";
-
     public static bool HasSqlServerConnectionString
-        => !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(ConnectionStringEnvironmentVariable));
+        => IsConfigured;
 
     [Fact(
         Skip = $"Set {ConnectionStringEnvironmentVariable} to run SQL Server integration tests.",
@@ -208,43 +205,6 @@ public sealed class SqlServerIntegrationTests
         }
     }
 
-    private static async Task<string> CreateDatabaseConnectionStringAsync(
-        string databaseName,
-        CancellationToken cancellationToken)
-    {
-        var configuredConnectionString = Environment.GetEnvironmentVariable(ConnectionStringEnvironmentVariable)!;
-        var masterConnectionString = new SqlConnectionStringBuilder(configuredConnectionString)
-        {
-            InitialCatalog = "master",
-            TrustServerCertificate = true
-        }.ConnectionString;
-
-        await WaitForSqlServerAsync(masterConnectionString, cancellationToken);
-
-        return new SqlConnectionStringBuilder(masterConnectionString)
-        {
-            InitialCatalog = databaseName
-        }.ConnectionString;
-    }
-
-    private static async Task WaitForSqlServerAsync(string connectionString, CancellationToken cancellationToken)
-    {
-        const int maximumAttempts = 60;
-        for (var attempt = 1; attempt <= maximumAttempts; attempt++)
-        {
-            try
-            {
-                await using var connection = new SqlConnection(connectionString);
-                await connection.OpenAsync(cancellationToken);
-                return;
-            }
-            catch (SqlException) when (attempt < maximumAttempts)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
-            }
-        }
-    }
-
     private static MaskedDatabaseContext CreateMaskedContext(string connectionString)
     {
         var options = new DbContextOptionsBuilder<MaskedDatabaseContext>()
@@ -299,25 +259,6 @@ public sealed class SqlServerIntegrationTests
         return new ResizedUnmaskedDatabaseContext(options);
     }
 
-    private static async Task ExecuteMigrationOperationsAsync(
-        DbContext context,
-        IReadOnlyList<MigrationOperation> operations,
-        IModel model,
-        CancellationToken cancellationToken)
-    {
-        var connection = context.Database.GetDbConnection();
-        if (connection.State != System.Data.ConnectionState.Open)
-        {
-            await connection.OpenAsync(cancellationToken);
-        }
-
-        var commands = context.GetService<IMigrationsSqlGenerator>().Generate(operations, model);
-        foreach (var migrationCommand in commands)
-        {
-            await ExecuteNonQueryAsync(connection, migrationCommand.CommandText, cancellationToken);
-        }
-    }
-
     private static async Task<string?> GetMaskingFunctionAsync(DbContext context, CancellationToken cancellationToken)
     {
         var connection = context.Database.GetDbConnection();
@@ -339,26 +280,6 @@ public sealed class SqlServerIntegrationTests
               AND column_definition.is_masked = 1;
             """,
             cancellationToken);
-    }
-
-    private static async Task<object?> ExecuteScalarAsync(
-        DbConnection connection,
-        string commandText,
-        CancellationToken cancellationToken)
-    {
-        await using var command = connection.CreateCommand();
-        command.CommandText = commandText;
-        return await command.ExecuteScalarAsync(cancellationToken);
-    }
-
-    private static async Task ExecuteNonQueryAsync(
-        DbConnection connection,
-        string commandText,
-        CancellationToken cancellationToken)
-    {
-        await using var command = connection.CreateCommand();
-        command.CommandText = commandText;
-        _ = await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private static void ConfigureModel(
@@ -428,4 +349,5 @@ public sealed class SqlServerIntegrationTests
         public int Id { get; set; }
         public string Email { get; set; } = string.Empty;
     }
+
 }

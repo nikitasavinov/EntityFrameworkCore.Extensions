@@ -2,25 +2,11 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.EntityFrameworkCore.Update;
 
 namespace EntityFrameworkCore.Extensions.Services;
 
-/// <summary>
-/// Generates SQL Server migration commands for EntityFrameworkCore.Extensions annotations.
-/// </summary>
-internal sealed class ExtendedSqlServerMigrationsSqlGenerator : SqlServerMigrationsSqlGenerator
+internal sealed partial class ExtendedSqlServerMigrationsSqlGenerator
 {
-    /// <summary>Initializes a new generator instance.</summary>
-    /// <param name="dependencies">The relational migration SQL dependencies.</param>
-    /// <param name="commandBatchPreparer">The SQL Server modification-command batch preparer.</param>
-    public ExtendedSqlServerMigrationsSqlGenerator(
-        MigrationsSqlGeneratorDependencies dependencies,
-        ICommandBatchPreparer commandBatchPreparer)
-        : base(dependencies, commandBatchPreparer)
-    {
-    }
-
     /// <inheritdoc />
     protected override void Generate(
         CreateTableOperation operation,
@@ -125,16 +111,24 @@ internal sealed class ExtendedSqlServerMigrationsSqlGenerator : SqlServerMigrati
     {
         var sqlHelper = Dependencies.SqlGenerationHelper;
         var stringTypeMapping = Dependencies.TypeMappingSource.GetMapping(typeof(string));
+
+        // SQL Server validates DROP MASKED while compiling a batch, even when an IF condition is false.
+        // Dynamic SQL defers that validation until the catalog check confirms that the mask still exists.
         builder.Append("IF EXISTS (SELECT 1 FROM [sys].[masked_columns] WHERE [object_id] = OBJECT_ID(")
             .Append(stringTypeMapping.GenerateSqlLiteral(
                 sqlHelper.DelimitIdentifier(operation.Table, operation.Schema)))
             .Append(") AND [name] = ")
             .Append(stringTypeMapping.GenerateSqlLiteral(operation.Name))
             .Append(" AND [is_masked] = 1)")
-            .AppendLine();
-
-        AppendAlterColumn(operation, builder);
-        builder.Append(" DROP MASKED")
+            .AppendLine()
+            .AppendLine("BEGIN")
+            .Append("    EXEC(")
+            .Append(stringTypeMapping.GenerateSqlLiteral(
+                $"ALTER TABLE {sqlHelper.DelimitIdentifier(operation.Table, operation.Schema)} " +
+                $"ALTER COLUMN {sqlHelper.DelimitIdentifier(operation.Name)} DROP MASKED" +
+                sqlHelper.StatementTerminator))
+            .AppendLine(");")
+            .Append("END")
             .Append(sqlHelper.StatementTerminator)
             .EndCommand();
     }

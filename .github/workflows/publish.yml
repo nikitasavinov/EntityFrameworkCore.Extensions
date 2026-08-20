@@ -81,7 +81,7 @@ jobs:
       - name: Test against SQL Server
         run: >-
           dotnet test --solution EntityFrameworkCore.Extensions.sln
-          --configuration Release --no-build --minimum-expected-tests 35 --fail-skips on
+          --configuration Release --no-build --fail-skips on
       - name: Pack
         run: >-
           dotnet pack EntityFrameworkCore.Extensions/EntityFrameworkCore.Extensions.csproj

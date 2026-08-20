@@ -7,6 +7,7 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="[10.0.11,11.0.0)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="[10.0.11,11.0.0)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="[10.0.11,11.0.0)" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="[10.0.11,11.0.0)" />
     <PackageVersion Include="xunit.v3" Version="4.0.0" />
   </ItemGroup>
 </Project>

@@ -3,18 +3,23 @@
 [![CI](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml/badge.svg)](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml)
 [![NuGet downloads](https://img.shields.io/nuget/dt/EntityFrameworkCore.Extensions?logo=nuget&label=downloads&color=004880)](https://www.nuget.org/packages/EntityFrameworkCore.Extensions/)
 
-SQL Server extensions for Entity Framework Core 10 and .NET 10.
+SQL Server dynamic data masking and migration helpers for EF Core 10.
 
 See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Samples) for more usage examples.
 
+## Features
+
+- SQL Server dynamic data masking with migration support.
+- Model-wide delete behavior.
+- SQL files in migrations.
+- Provider-aware synchronous and asynchronous migrations.
+- [Upcoming] SQL Server `geography` and `geometry` spatial indexes.
+- [Upcoming] Dynamic data masking polish: scoped `GRANT` / `REVOKE UNMASK` support and remaining alter/drop edge cases.
+- [Upcoming] Row-level security through fluent annotations and migration SQL.
+- [Upcoming] SQL Server ledger table support.
+- [Upcoming] More to come.
+
 ## Changelog
-
-### Upcoming
-
-- Dynamic data masking polish: scoped `GRANT` / `REVOKE UNMASK` support and remaining alter/drop edge cases.
-- Row-level security through fluent annotations and migration SQL.
-- SQL Server ledger table support.
-- More to come.
 
 ### 10.0.0
 

@@ -3,23 +3,28 @@
 [![CI](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml/badge.svg)](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml)
 [![NuGet downloads](https://img.shields.io/nuget/dt/EntityFrameworkCore.Extensions?logo=nuget&label=downloads&color=004880)](https://www.nuget.org/packages/EntityFrameworkCore.Extensions/)
 
-SQL Server dynamic data masking and migration helpers for EF Core 10.
+SQL Server spatial indexes, dynamic data masking, and migration helpers for EF Core 10.
 
 See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Samples) for more usage examples.
 
 ## Features
 
 - SQL Server dynamic data masking with migration support.
+- SQL Server `geography` and `geometry` spatial indexes.
 - Model-wide delete behavior.
 - SQL files in migrations.
 - Provider-aware synchronous and asynchronous migrations.
-- [Upcoming] SQL Server `geography` and `geometry` spatial indexes.
 - [Upcoming] Dynamic data masking polish: scoped `GRANT` / `REVOKE UNMASK` support and remaining alter/drop edge cases.
 - [Upcoming] Row-level security through fluent annotations and migration SQL.
 - [Upcoming] SQL Server ledger table support.
 - [Upcoming] More to come.
 
 ## Changelog
+
+### 10.1.0
+
+- Added SQL Server auto-grid spatial indexes for `geography` and `geometry`, including bounding-box and cells-per-object options.
+- Added fluent configuration for entity and owned-entity spatial indexes, with migration support.
 
 ### 10.0.0
 
@@ -87,3 +92,40 @@ public static class Program
     }
 }
 ```
+
+## Spatial indexes
+
+Install `Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite`, enable it in `UseSqlServer()`, and configure the index alongside the rest of the entity model:
+
+```csharp
+optionsBuilder.UseSqlServer(
+    connectionString,
+    sqlServer => sqlServer.UseNetTopologySuite());
+optionsBuilder.UseEntityFrameworkCoreExtensions();
+
+modelBuilder.Entity<Place>()
+    .Property(place => place.Location)
+    .HasColumnType("geography");
+
+modelBuilder.Entity<Place>()
+    .HasSpatialIndex(place => place.Location)
+    .HasDatabaseName("SIX_Places_Location");
+
+modelBuilder.Entity<Region>()
+    .Property(region => region.Boundary)
+    .HasColumnType("geometry");
+
+modelBuilder.Entity<Region>()
+    .HasSpatialIndex(
+        region => region.Boundary,
+        spatial => spatial
+            .HasBoundingBox(-180, -90, 180, 90)
+            .HasCellsPerObject(32))
+    .HasDatabaseName("SIX_Regions_Boundary");
+```
+
+`geography` uses `GEOGRAPHY_AUTO_GRID`. `geometry` uses `GEOMETRY_AUTO_GRID` and requires a bounding box.
+
+Each entity with a spatial index must have a primary key backed by a clustered SQL Server index. This is the SQL Server provider default; configuring the primary key with `.IsClustered(false)` is not supported. Only `.HasDatabaseName()` may be chained after `.HasSpatialIndex()`; unique, filtered, clustered, included-column, descending, and other SQL Server index options are not supported.
+
+Use the overload with a model index name to create multiple spatial indexes on one property, and use `.HasDatabaseName()` to give each one a distinct SQL index name. The same expression-based, string-based, and named overloads are available on `OwnedNavigationBuilder`.

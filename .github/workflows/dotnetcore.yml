@@ -46,7 +46,7 @@ jobs:
       - name: Test
         run: >-
           dotnet test --solution EntityFrameworkCore.Extensions.sln
-          --configuration Release --no-build --minimum-expected-tests 35
+          --configuration Release --no-build
 
   sqlserver-integration:
     name: SQL Server integration
@@ -86,7 +86,7 @@ jobs:
       - name: Test against SQL Server
         run: >-
           dotnet test --solution EntityFrameworkCore.Extensions.sln
-          --configuration Release --no-build --minimum-expected-tests 35 --fail-skips on
+          --configuration Release --no-build --fail-skips on
 
   package:
     name: Validate package

@@ -1,3 +1,5 @@
+using NetTopologySuite.Geometries;
+
 namespace EntityFrameworkCore.Extensions.Samples;
 
 public class Customer
@@ -18,4 +20,16 @@ public class Order
 {
     public int Id { get; set; }
     public DateTime Created { get; set; }
+}
+
+public class Place
+{
+    public int Id { get; set; }
+    public Point Location { get; set; } = new(0, 0) { SRID = 4326 };
+}
+
+public class Region
+{
+    public int Id { get; set; }
+    public Polygon Boundary { get; set; } = null!;
 }

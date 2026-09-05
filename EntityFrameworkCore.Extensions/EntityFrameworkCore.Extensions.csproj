@@ -3,17 +3,17 @@
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>true</IsPackable>
     <PackageId>EntityFrameworkCore.Extensions</PackageId>
-    <Version>10.0.0</Version>
+    <Version>10.1.0</Version>
     <Authors>Nikita Savinov</Authors>
     <Company>Nikita Savinov</Company>
-    <Description>SQL Server dynamic data masking and migration helpers for EF Core 10.</Description>
+    <Description>SQL Server spatial indexes, dynamic data masking, and migration helpers for EF Core 10.</Description>
     <PackageProjectUrl>https://github.com/nikitasavinov/EntityFrameworkCore.Extensions</PackageProjectUrl>
     <RepositoryUrl>https://github.com/nikitasavinov/EntityFrameworkCore.Extensions</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>EntityFrameworkCore;EntityFramework;entity-framework-core;EFCore;SQLServer;dynamic-data-masking;data-masking;fluent-api;migrations;sql-migrations</PackageTags>
+    <PackageTags>EntityFrameworkCore;EFCore;SQLServer;spatial-index;dynamic-data-masking;data-masking;migrations</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

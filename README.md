@@ -10,16 +10,21 @@ See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Sa
 ## Features
 
 - SQL Server dynamic data masking with migration support.
+- SQL Server `geography` and `geometry` spatial indexes.
 - Model-wide delete behavior.
 - SQL files in migrations.
 - Provider-aware synchronous and asynchronous migrations.
-- [Upcoming] SQL Server `geography` and `geometry` spatial indexes.
 - [Upcoming] Dynamic data masking polish: scoped `GRANT` / `REVOKE UNMASK` support and remaining alter/drop edge cases.
 - [Upcoming] Row-level security through fluent annotations and migration SQL.
 - [Upcoming] SQL Server ledger table support.
 - [Upcoming] More to come.
 
 ## Changelog
+
+### 10.1.0
+
+- Added SQL Server auto-grid spatial indexes for `geography` and `geometry`, including bounding-box and cells-per-object options.
+- Added fluent configuration for entity and owned-entity spatial indexes, with migration support.
 
 ### 10.0.0
 

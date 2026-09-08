@@ -16,6 +16,33 @@ internal sealed partial class ExtendedSqlServerAnnotationProvider : SqlServerAnn
     public ExtendedSqlServerAnnotationProvider(RelationalAnnotationProviderDependencies dependencies) : base(dependencies)
     {
     }
+
+    /// <inheritdoc />
+    public override IEnumerable<IAnnotation> For(ITableIndex index, bool designTime)
+    {
+        foreach (var annotation in base.For(index, designTime))
+        {
+            yield return annotation;
+        }
+
+        if (!designTime)
+        {
+            yield break;
+        }
+
+        foreach (var annotation in GetColumnstoreIndexAnnotations(index))
+        {
+            yield return annotation;
+        }
+
+        foreach (var annotation in GetSpatialIndexAnnotations(index))
+        {
+            yield return annotation;
+        }
+    }
+
+    private static string FormatIndexName(string? schema, string table, string index)
+        => schema is null ? $"{table}.{index}" : $"{schema}.{table}.{index}";
 }
 
 #pragma warning restore EF1001

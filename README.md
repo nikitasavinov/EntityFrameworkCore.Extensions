@@ -3,7 +3,7 @@
 [![CI](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml/badge.svg)](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml)
 [![NuGet downloads](https://img.shields.io/nuget/dt/EntityFrameworkCore.Extensions?logo=nuget&label=downloads&color=004880)](https://www.nuget.org/packages/EntityFrameworkCore.Extensions/)
 
-SQL Server spatial indexes, dynamic data masking, and migration helpers for EF Core 10.
+SQL Server columnstore and spatial indexes, dynamic data masking, and migration helpers for EF Core 10.
 
 See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Samples) for more usage examples.
 
@@ -11,6 +11,7 @@ See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Sa
 
 - SQL Server dynamic data masking with migration support.
 - SQL Server `geography` and `geometry` spatial indexes.
+- SQL Server nonclustered columnstore indexes, including filtered indexes.
 - Model-wide delete behavior.
 - SQL files in migrations.
 - Provider-aware synchronous and asynchronous migrations.
@@ -20,6 +21,11 @@ See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Sa
 - [Upcoming] More to come.
 
 ## Changelog
+
+### Unreleased
+
+- Added nonclustered columnstore indexes with fluent configuration for entity and owned-entity properties.
+- Added migration support for creating, changing, renaming, and dropping columnstore indexes, with validation of supported columns and index options.
 
 ### 10.1.0
 
@@ -129,3 +135,26 @@ modelBuilder.Entity<Region>()
 Each entity with a spatial index must have a primary key backed by a clustered SQL Server index. This is the SQL Server provider default; configuring the primary key with `.IsClustered(false)` is not supported. Only `.HasDatabaseName()` may be chained after `.HasSpatialIndex()`; unique, filtered, clustered, included-column, descending, and other SQL Server index options are not supported.
 
 Use the overload with a model index name to create multiple spatial indexes on one property, and use `.HasDatabaseName()` to give each one a distinct SQL index name. The same expression-based, string-based, and named overloads are available on `OwnedNavigationBuilder`.
+
+## Columnstore indexes
+
+Configure a nonclustered columnstore index for reporting and aggregation queries on SQL Server 2016 or later:
+
+```csharp
+optionsBuilder.UseSqlServer(connectionString);
+optionsBuilder.UseEntityFrameworkCoreExtensions();
+
+modelBuilder.Entity<Order>().Property(order => order.Amount).HasPrecision(18, 2);
+modelBuilder.Entity<Order>()
+    .HasColumnstoreIndex(order => new { order.Created, order.Amount })
+    .HasDatabaseName("NCCI_Orders_Reporting")
+    .HasFilter("[Amount] > 0"); // Optional SQL predicate, using database column names.
+```
+
+The generated migration creates a `CREATE NONCLUSTERED COLUMNSTORE INDEX`. Changes to its selected columns or filter drop and recreate the index; renames and removal use the standard EF Core migration operations. Reverse migrations restore the previous definition. See the sample project's `AddColumnstoreIndex` migration for an example.
+
+Use the expression overload for one property or an anonymous object containing several properties. String-based overloads accept property names, for example `.HasColumnstoreIndex("Created", "Amount")`. To retain an ordinary index on the same properties, give the columnstore index a separate **model** name: `.HasColumnstoreIndex(order => new { order.Created, order.Amount }, "Reporting")`. The same overloads are available for owned entities, with the string-based named overload taking a property-name array followed by the model index name.
+
+SQL Server permits only one columnstore index per table, including tables shared by owned entities. This implementation supports nonclustered indexes with 1–1024 columns of supported built-in SQL Server types. Indexed strings and binary values must have bounded lengths; `varchar(max)`, `nvarchar(max)`, `varbinary(max)`, XML, spatial/CLR types, `sql_variant`, `rowversion`, computed columns, and sparse columns are unsupported. Nonclustered columnstore indexes on memory-optimized tables are also unsupported.
+
+Only `.HasDatabaseName()` and `.HasFilter()` customize these indexes; explicit `.IsClustered(false)`, `.IsCreatedOnline(false)`, and `.SortInTempDb(false)` are also accepted. Clustered columnstore indexes, unique indexes, included columns, sort direction, ordered columnstore indexes, and additional SQL Server index options such as ONLINE or compression settings are not implemented. Invalid configurations fail during design-time model creation or migration SQL generation. Table and column checks during SQL generation require corresponding model metadata; handwritten migrations without it rely on SQL Server for those checks. See [SQL Server's columnstore documentation](https://learn.microsoft.com/en-us/sql/t-sql/statements/create-columnstore-index-transact-sql) for database requirements and restrictions.

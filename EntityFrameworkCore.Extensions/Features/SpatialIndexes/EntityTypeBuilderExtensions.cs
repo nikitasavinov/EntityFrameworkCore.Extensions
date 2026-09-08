@@ -6,7 +6,7 @@ namespace EntityFrameworkCore.Extensions;
 /// <summary>
 /// Provides SQL Server configuration helpers for entity and owned entity types.
 /// </summary>
-public static class EntityTypeBuilderExtensions
+public static partial class EntityTypeBuilderExtensions
 {
     /// <summary>
     /// Configures a SQL Server spatial index for the selected property.

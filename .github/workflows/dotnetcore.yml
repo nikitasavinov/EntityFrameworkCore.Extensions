@@ -49,7 +49,7 @@ jobs:
           --configuration Release --no-build
 
   sqlserver-integration:
-    name: SQL Server integration
+    name: SQL Server 2025 integration
     runs-on: ubuntu-latest
     env:
       EFCORE_EXTENSIONS_SQLSERVER: >-
@@ -87,10 +87,97 @@ jobs:
         run: >-
           dotnet test --solution EntityFrameworkCore.Extensions.sln
           --configuration Release --no-build --fail-skips on
+          --filter-not-trait "SqlServerVersion=2012"
+
+  sqlserver-2016-integration:
+    name: SQL Server 2016 integration
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      EFCORE_EXTENSIONS_SQLSERVER: >-
+        Server=(localdb)\EfCoreExtensions2016;Database=master;
+        Integrated Security=True;Encrypt=True;TrustServerCertificate=True
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - name: Install SQL Server 2016 SP3 LocalDB
+        shell: pwsh
+        run: |
+          $installerPath = Join-Path $env:RUNNER_TEMP 'SqlLocalDB2016.msi'
+          Invoke-WebRequest -Uri 'https://download.microsoft.com/download/f/9/8/f982347c-fee3-4b3e-a8dc-c95383aa3020/sql16_sp3_dlc/en-us/SqlLocalDB.msi' -OutFile $installerPath
+          $install = Start-Process msiexec.exe -Wait -PassThru -ArgumentList @(
+            '/i', "`"$installerPath`"", '/qn', '/norestart', 'IACCEPTSQLLOCALDBLICENSETERMS=YES'
+          )
+          if ($install.ExitCode -notin @(0, 3010)) {
+            throw "SQL Server 2016 LocalDB installation failed: $($install.ExitCode)"
+          }
+
+          $localDb = Join-Path $env:ProgramFiles 'Microsoft SQL Server\130\Tools\Binn\SqlLocalDB.exe'
+          & $localDb create EfCoreExtensions2016 13.0 -s
+          if ($LASTEXITCODE -ne 0) {
+            throw "SQL Server 2016 LocalDB startup failed: $LASTEXITCODE"
+          }
+      - name: Restore packages
+        run: dotnet restore EntityFrameworkCore.Extensions.sln --locked-mode
+      - name: Build
+        run: dotnet build EntityFrameworkCore.Extensions.sln --configuration Release --no-restore
+      - name: Test against SQL Server 2016
+        run: >-
+          dotnet test --solution EntityFrameworkCore.Extensions.sln
+          --configuration Release --no-build --fail-skips on
+          --filter-not-trait "SqlServerVersion=2012"
+
+  sqlserver-2012-integration:
+    name: SQL Server 2012 rejection
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      EFCORE_EXTENSIONS_SQLSERVER: >-
+        Server=(localdb)\EfCoreExtensions2012;Database=master;
+        Integrated Security=True;Encrypt=True;TrustServerCertificate=True
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - name: Install SQL Server 2012 SP3 LocalDB
+        shell: pwsh
+        run: |
+          $installerPath = Join-Path $env:RUNNER_TEMP 'SqlLocalDB2012.msi'
+          Invoke-WebRequest -Uri 'https://download.microsoft.com/download/F/6/7/F673709C-D371-4A64-8BF9-C1DD73F60990/ENU/x64/SqlLocalDB.msi' -OutFile $installerPath
+          $install = Start-Process msiexec.exe -Wait -PassThru -ArgumentList @(
+            '/i', "`"$installerPath`"", '/qn', '/norestart', 'IACCEPTSQLLOCALDBLICENSETERMS=YES'
+          )
+          if ($install.ExitCode -notin @(0, 3010)) {
+            throw "SQL Server 2012 LocalDB installation failed: $($install.ExitCode)"
+          }
+
+          $localDb = Join-Path $env:ProgramFiles 'Microsoft SQL Server\110\Tools\Binn\SqlLocalDB.exe'
+          & $localDb create EfCoreExtensions2012 11.0 -s
+          if ($LASTEXITCODE -ne 0) {
+            throw "SQL Server 2012 LocalDB startup failed: $LASTEXITCODE"
+          }
+      - name: Restore packages
+        run: dotnet restore EntityFrameworkCore.Extensions.sln --locked-mode
+      - name: Build
+        run: dotnet build EntityFrameworkCore.Extensions.sln --configuration Release --no-restore
+      - name: Test SQL Server 2012 rejection
+        run: >-
+          dotnet test --solution EntityFrameworkCore.Extensions.sln
+          --configuration Release --no-build --fail-skips on
+          --filter-trait "SqlServerVersion=2012"
 
   package:
     name: Validate package
-    needs: [build-and-test, sqlserver-integration]
+    needs: [build-and-test, sqlserver-integration, sqlserver-2016-integration, sqlserver-2012-integration]
     runs-on: ubuntu-latest
 
     steps:

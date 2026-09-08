@@ -82,6 +82,7 @@ jobs:
         run: >-
           dotnet test --solution EntityFrameworkCore.Extensions.sln
           --configuration Release --no-build --fail-skips on
+          --filter-not-trait "SqlServerVersion=2012"
       - name: Pack
         run: >-
           dotnet pack EntityFrameworkCore.Extensions/EntityFrameworkCore.Extensions.csproj

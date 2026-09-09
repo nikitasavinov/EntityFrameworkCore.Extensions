@@ -22,7 +22,7 @@ See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Sa
 
 ## Changelog
 
-### Unreleased
+### 10.2.0
 
 - Added nonclustered columnstore indexes with fluent configuration for entity and owned-entity properties.
 - Added migration support for creating, changing, renaming, and dropping columnstore indexes, with validation of supported columns and index options.

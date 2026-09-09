@@ -1,5 +1,4 @@
 using System.Globalization;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
@@ -14,10 +13,8 @@ internal sealed partial class ExtendedSqlServerMigrationsSqlGenerator
         "SqlServer:DataCompression",
     ];
 
-    /// <inheritdoc />
-    protected override void Generate(
+    private bool TryGenerateSpatialIndex(
         CreateIndexOperation operation,
-        IModel? model,
         MigrationCommandListBuilder builder,
         bool terminate)
     {
@@ -27,8 +24,7 @@ internal sealed partial class ExtendedSqlServerMigrationsSqlGenerator
         var configuration = SpatialIndexAnnotation.GetConfiguration(operation, indexName);
         if (configuration is null)
         {
-            base.Generate(operation, model, builder, terminate);
-            return;
+            return false;
         }
 
         ValidateSpatialIndexOperation(operation, indexName);
@@ -83,6 +79,8 @@ internal sealed partial class ExtendedSqlServerMigrationsSqlGenerator
             builder.Append(sqlHelper.StatementTerminator)
                 .EndCommand();
         }
+
+        return true;
     }
 
     private static void ValidateSpatialIndexOperation(CreateIndexOperation operation, string indexName)

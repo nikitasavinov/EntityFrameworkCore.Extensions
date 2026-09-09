@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.Update;
 
 namespace EntityFrameworkCore.Extensions.Services;
@@ -16,5 +18,19 @@ internal sealed partial class ExtendedSqlServerMigrationsSqlGenerator : SqlServe
         ICommandBatchPreparer commandBatchPreparer)
         : base(dependencies, commandBatchPreparer)
     {
+    }
+
+    /// <inheritdoc />
+    protected override void Generate(
+        CreateIndexOperation operation,
+        IModel? model,
+        MigrationCommandListBuilder builder,
+        bool terminate)
+    {
+        if (!TryGenerateColumnstoreIndex(operation, model, builder, terminate)
+            && !TryGenerateSpatialIndex(operation, builder, terminate))
+        {
+            base.Generate(operation, model, builder, terminate);
+        }
     }
 }

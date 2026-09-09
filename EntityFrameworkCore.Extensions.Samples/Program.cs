@@ -30,6 +30,12 @@ internal sealed class Program
             modelBuilder.Entity<Customer>().Property(customer => customer.DiscountCardNumber).HasDataMask(MaskingFunctions.Random(10, 100));
             modelBuilder.Entity<Customer>().Property(customer => customer.Phone).HasDataMask(MaskingFunctions.Partial(2, "XX-XX", 1));
 
+            modelBuilder.Entity<Order>().Property(order => order.Amount).HasPrecision(18, 2);
+            modelBuilder.Entity<Order>()
+                .HasColumnstoreIndex(order => new { order.Created, order.Amount })
+                .HasDatabaseName("NCCI_Orders_Reporting")
+                .HasFilter("[Amount] > 0");
+
             modelBuilder.Entity<Place>().Property(place => place.Location).HasColumnType("geography");
             modelBuilder.Entity<Place>()
                 .HasSpatialIndex(place => place.Location)
@@ -60,11 +66,13 @@ internal sealed class Program
             {
                 new()
                 {
-                    Created = DateTime.UtcNow.AddDays(-1)
+                    Created = DateTime.UtcNow.AddDays(-1),
+                    Amount = 120.50m
                 },
                 new()
                 {
-                    Created = DateTime.UtcNow.AddDays(-10)
+                    Created = DateTime.UtcNow.AddDays(-10),
+                    Amount = 95m
                 }
             }
         };

@@ -8,19 +8,8 @@ namespace EntityFrameworkCore.Extensions.Services;
 
 internal sealed partial class ExtendedSqlServerAnnotationProvider
 {
-    /// <inheritdoc />
-    public override IEnumerable<IAnnotation> For(ITableIndex index, bool designTime)
+    private static IEnumerable<IAnnotation> GetSpatialIndexAnnotations(ITableIndex index)
     {
-        foreach (var annotation in base.For(index, designTime))
-        {
-            yield return annotation;
-        }
-
-        if (!designTime)
-        {
-            yield break;
-        }
-
         var indexName = FormatIndexName(index.Table.Schema, index.Table.Name, index.Name);
         var mappedIndexes = index.MappedIndexes.ToList();
         var spatialIndexes = mappedIndexes
@@ -151,9 +140,6 @@ internal sealed partial class ExtendedSqlServerAnnotationProvider
                 $"'{index.Name}' can be created.");
         }
     }
-
-    private static string FormatIndexName(string? schema, string table, string index)
-        => schema is null ? $"{table}.{index}" : $"{schema}.{table}.{index}";
 }
 
 #pragma warning restore EF1001

@@ -139,17 +139,25 @@ public sealed class SpatialIndexSqlGeneratorTests
         Assert.Contains("cannot specify sort order", exception.Message, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void RawSpatialIndexOperationRejectsOnlineAnnotation()
+    [Theory]
+    [InlineData("SqlServer:Clustered", true, "cannot be clustered")]
+    [InlineData("SqlServer:Include", new[] { "Id" }, "cannot have included columns")]
+    [InlineData("SqlServer:Online", true, "does not support ONLINE")]
+    [InlineData("SqlServer:Online", false, "does not support ONLINE")]
+    [InlineData("SqlServer:FillFactor", 80, "does not support additional SQL Server index options yet")]
+    [InlineData("SqlServer:SortInTempDb", true, "does not support additional SQL Server index options yet")]
+    [InlineData("SqlServer:SortInTempDb", false, "does not support additional SQL Server index options yet")]
+    [InlineData("SqlServer:DataCompression", DataCompressionType.Page, "does not support additional SQL Server index options yet")]
+    public void RawSpatialIndexOperationRejectsUnsupportedAnnotations(string annotationName, object value, string expectedMessage)
     {
         using var context = CreateGeographyContext();
         var operation = CreateSpatialIndexOperation();
-        operation.AddAnnotation("SqlServer:Online", true);
+        operation.AddAnnotation(annotationName, value);
 
         var exception = Assert.Throws<InvalidOperationException>(
             () => GenerateCommands(context, [operation], model: null));
 
-        Assert.Contains("does not support ONLINE", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(expectedMessage, exception.Message, StringComparison.Ordinal);
     }
 
     private static GeographyContext CreateGeographyContext()

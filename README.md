@@ -3,7 +3,7 @@
 [![CI](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml/badge.svg)](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml)
 [![NuGet downloads](https://img.shields.io/nuget/dt/EntityFrameworkCore.Extensions?logo=nuget&label=downloads&color=004880)](https://www.nuget.org/packages/EntityFrameworkCore.Extensions/)
 
-SQL Server columnstore and spatial indexes, dynamic data masking, and migration helpers for EF Core 10.
+SQL Server columnstore and spatial indexes, dynamic data masking, query and table hints, and migration helpers for EF Core 10.
 
 See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Samples) for more usage examples.
 
@@ -12,6 +12,7 @@ See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Sa
 - SQL Server dynamic data masking with migration support.
 - SQL Server `geography` and `geometry` spatial indexes.
 - SQL Server nonclustered columnstore indexes, including filtered indexes.
+- SQL Server query hints (`OPTION`) and table hints (`WITH`).
 - Model-wide delete behavior.
 - SQL files in migrations.
 - Provider-aware synchronous and asynchronous migrations.
@@ -21,6 +22,10 @@ See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Sa
 - [Upcoming] More to come.
 
 ## Changelog
+
+### Unreleased
+
+- Added SQL Server query hints (`OPTION`) and table hints (`WITH`) through `WithQueryHints` and `WithTableHints`.
 
 ### 10.2.0
 
@@ -158,3 +163,23 @@ Use the expression overload for one property or an anonymous object containing s
 SQL Server permits only one columnstore index per table, including tables shared by owned entities. This implementation supports nonclustered indexes with 1–1024 columns of supported built-in SQL Server types. Indexed strings and binary values must have bounded lengths; `varchar(max)`, `nvarchar(max)`, `varbinary(max)`, XML, spatial/CLR types, `sql_variant`, `rowversion`, computed columns, and sparse columns are unsupported. Nonclustered columnstore indexes on memory-optimized tables are also unsupported.
 
 Only `.HasDatabaseName()` and `.HasFilter()` customize these indexes; explicit `.IsClustered(false)`, `.IsCreatedOnline(false)`, and `.SortInTempDb(false)` are also accepted. Clustered columnstore indexes, unique indexes, included columns, sort direction, ordered columnstore indexes, and additional SQL Server index options such as ONLINE or compression settings are not implemented. Invalid configurations fail during design-time model creation or migration SQL generation. Table and column checks during SQL generation require corresponding model metadata; handwritten migrations without it rely on SQL Server for those checks. See [SQL Server's columnstore documentation](https://learn.microsoft.com/en-us/sql/t-sql/statements/create-columnstore-index-transact-sql) for database requirements and restrictions.
+
+## Query and table hints
+
+Add SQL Server hints to a LINQ query. `UseEntityFrameworkCoreExtensions()` registers the SQL generator:
+
+```csharp
+var orders = await context.Orders
+    .Where(order => order.CustomerId == customerId)
+    .Include(order => order.Lines)
+    .TagWith("Orders for customer page")
+    .WithQueryHints(QueryHint.Recompile(), QueryHint.MaxDop(1))
+    .WithTableHints(TableHint.NoLock())
+    .ToListAsync();
+```
+
+Query hints become one `OPTION` clause at the end of the statement. Table hints become a `WITH (...)` clause on every table the statement references, including joins and subqueries. Other query tags stay SQL comments and do not have to come first. The same calls apply to `ExecuteUpdate` and `ExecuteDelete`, to every command of a split query, and to hints written inside a compiled query, a correlated subquery, or a global query filter. Calling either method on an EF Core query throws when `UseEntityFrameworkCoreExtensions()` was not configured.
+
+`QueryHint` and `TableHint` check their arguments, and combinations SQL Server does not allow on one statement (such as two `MAXDOP` values, `NOLOCK` with `ROWLOCK`, `NOLOCK` with `UPDLOCK` or `XLOCK`, or `READPAST` with `NOLOCK`, `HOLDLOCK`, or `SERIALIZABLE`) throw before a command is sent. Several `JOIN`, `UNION`, or `GROUP` strategy hints can be combined, as can `KEEP PLAN` with `KEEPFIXED PLAN`. Hints in one call are written in the order given. See [query hints](https://learn.microsoft.com/sql/t-sql/queries/hints-transact-sql-query) and [table hints](https://learn.microsoft.com/sql/t-sql/queries/hints-transact-sql-table) for what SQL Server does with each one. The supported set works on SQL Server 2016 and later.
+
+Table hints apply to every table the statement references, including each table of a join. Uncomposed `FromSql` and `SqlQuery` queries keep the SQL you wrote, so put hints in that SQL. A query that includes `FromSql`, `SqlQuery`, or a table-valued function cannot take table hints, including when that source is joined to a mapped table, because those rows would be read without the hint. A composed raw SQL query can take query hints. Locking hints such as `UPDLOCK` last only until the current transaction ends.

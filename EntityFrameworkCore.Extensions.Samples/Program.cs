@@ -79,5 +79,14 @@ internal sealed class Program
 
         context.Customers.Add(customer);
         context.SaveChanges();
+
+        var customers = context.Customers
+            .Include(match => match.Orders)
+            .Where(match => match.Surname == customer.Surname)
+            .WithQueryHints(QueryHint.Recompile(), QueryHint.MaxDop(1))
+            .WithTableHints(TableHint.NoLock())
+            .ToList();
+
+        Console.WriteLine($"Loaded {customers.Count} customers.");
     }
 }

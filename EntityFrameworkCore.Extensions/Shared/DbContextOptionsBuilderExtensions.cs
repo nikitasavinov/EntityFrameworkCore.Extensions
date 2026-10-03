@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace EntityFrameworkCore.Extensions;
 
@@ -51,5 +53,15 @@ public static class DbContextOptionsBuilderExtensions
 
         optionsBuilder.ReplaceService<IMigrationsSqlGenerator, ExtendedSqlServerMigrationsSqlGenerator>();
         optionsBuilder.ReplaceService<IRelationalAnnotationProvider, ExtendedSqlServerAnnotationProvider>();
+        optionsBuilder.ReplaceService<IQuerySqlGeneratorFactory, ExtendedSqlServerQuerySqlGeneratorFactory>();
+        optionsBuilder.ReplaceService<IRelationalParameterBasedSqlProcessorFactory, ExtendedSqlServerParameterBasedSqlProcessorFactory>();
+        optionsBuilder.ReplaceService<IQueryTranslationPreprocessorFactory, ExtendedQueryTranslationPreprocessorFactory>();
+
+        // Hint calls inside compiled queries and subqueries have to be rewritten before EF extracts parameters.
+        // Query filters are added later, inside the provider preprocessor, so that preprocessor is wrapped rather
+        // than replaced and the remaining calls are registered after it runs.
+#pragma warning disable EF1001
+        optionsBuilder.ReplaceService<IQueryCompiler, ExtendedQueryCompiler>();
+#pragma warning restore EF1001
     }
 }

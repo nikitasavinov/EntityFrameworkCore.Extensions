@@ -23,7 +23,7 @@ See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Sa
 
 ## Changelog
 
-### Unreleased
+### 10.3.0
 
 - Added SQL Server query hints (`OPTION`) and table hints (`WITH`) through `WithQueryHints` and `WithTableHints`.
 

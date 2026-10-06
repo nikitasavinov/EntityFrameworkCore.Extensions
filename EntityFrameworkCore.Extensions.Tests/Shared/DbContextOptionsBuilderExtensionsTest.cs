@@ -1,8 +1,11 @@
-﻿using EntityFrameworkCore.Extensions.Services;
+﻿#pragma warning disable EF1001 // The registration test checks the internal query compiler replacement.
+using EntityFrameworkCore.Extensions.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using Xunit;
@@ -26,6 +29,14 @@ namespace EntityFrameworkCore.Extensions.Tests
             Assert.Same(optionsBuilder, result);
             Assert.IsType<ExtendedSqlServerMigrationsSqlGenerator>(migrationSqlGenerator);
             Assert.IsType<ExtendedSqlServerAnnotationProvider>(relationalAnnotationProvider);
+            Assert.IsType<ExtendedSqlServerQuerySqlGeneratorFactory>(context.GetService<IQuerySqlGeneratorFactory>());
+            Assert.IsType<ExtendedSqlServerParameterBasedSqlProcessorFactory>(
+                context.GetService<IRelationalParameterBasedSqlProcessorFactory>());
+            Assert.IsType<ExtendedQueryCompiler>(context.GetService<IQueryCompiler>());
+            Assert.Equal(
+                "RelationalQueryTranslationPreprocessorFactory",
+                Assert.IsType<ExtendedQueryTranslationPreprocessorFactory>(
+                    context.GetService<IQueryTranslationPreprocessorFactory>()).ProviderFactory.GetType().Name);
         }
 
         [Fact]
@@ -40,6 +51,14 @@ namespace EntityFrameworkCore.Extensions.Tests
             Assert.Same(optionsBuilder, result);
             Assert.IsType<ExtendedSqlServerMigrationsSqlGenerator>(context.GetService<IMigrationsSqlGenerator>());
             Assert.IsType<ExtendedSqlServerAnnotationProvider>(context.GetService<IRelationalAnnotationProvider>());
+            Assert.IsType<ExtendedSqlServerQuerySqlGeneratorFactory>(context.GetService<IQuerySqlGeneratorFactory>());
+            Assert.IsType<ExtendedSqlServerParameterBasedSqlProcessorFactory>(
+                context.GetService<IRelationalParameterBasedSqlProcessorFactory>());
+            Assert.IsType<ExtendedQueryCompiler>(context.GetService<IQueryCompiler>());
+            Assert.Equal(
+                "RelationalQueryTranslationPreprocessorFactory",
+                Assert.IsType<ExtendedQueryTranslationPreprocessorFactory>(
+                    context.GetService<IQueryTranslationPreprocessorFactory>()).ProviderFactory.GetType().Name);
         }
 
         [Fact]
@@ -63,6 +82,10 @@ namespace EntityFrameworkCore.Extensions.Tests
             await context.Database.MigrateIfSupportedAsync(Xunit.TestContext.Current.CancellationToken);
 
             Assert.Equal("Microsoft.EntityFrameworkCore.InMemory", context.Database.ProviderName);
+            Assert.Equal(
+                "InMemoryQueryTranslationPreprocessorFactory",
+                Assert.IsType<ExtendedQueryTranslationPreprocessorFactory>(
+                    context.GetService<IQueryTranslationPreprocessorFactory>()).ProviderFactory.GetType().Name);
         }
 
         [Fact]

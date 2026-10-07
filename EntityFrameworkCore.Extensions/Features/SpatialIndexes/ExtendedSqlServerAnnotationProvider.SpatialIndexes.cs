@@ -72,57 +72,10 @@ internal sealed partial class ExtendedSqlServerAnnotationProvider
         IEnumerable<IIndex> mappedIndexes,
         string indexName)
     {
-        if (index.Columns.Count != 1)
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' must target exactly one column.");
-        }
-
-        if (index.IsUnique)
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' cannot be unique.");
-        }
-
-        if (index.Filter is not null)
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' cannot have a filter.");
-        }
-
-        if (index.IsDescending is not null)
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' cannot specify sort order.");
-        }
-
         foreach (var mappedIndex in mappedIndexes)
         {
-            if (mappedIndex.IsClustered() == true)
-            {
-                throw new InvalidOperationException(
-                    $"Spatial index '{indexName}' cannot be clustered.");
-            }
-
-            if (mappedIndex.GetIncludeProperties() is { Count: > 0 })
-            {
-                throw new InvalidOperationException(
-                    $"Spatial index '{indexName}' cannot have included columns.");
-            }
-
-            if (mappedIndex.IsCreatedOnline() is not null)
-            {
-                throw new InvalidOperationException(
-                    $"Spatial index '{indexName}' does not support ONLINE.");
-            }
-
-            if (mappedIndex.GetFillFactor() is not null
-                || mappedIndex.GetSortInTempDb() is not null
-                || mappedIndex.GetDataCompression() is not null)
-            {
-                throw new InvalidOperationException(
-                    $"Spatial index '{indexName}' does not support additional SQL Server index options yet.");
-            }
+            SpatialIndexAnnotation.ValidateIndex(
+                mappedIndex, indexName, index.Columns.Count, index.IsUnique, index.Filter, index.IsDescending);
         }
 
         var primaryKey = index.Table.PrimaryKey;

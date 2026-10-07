@@ -6,13 +6,6 @@ namespace EntityFrameworkCore.Extensions.Services;
 
 internal sealed partial class ExtendedSqlServerMigrationsSqlGenerator
 {
-    private static readonly string[] UnsupportedSpatialIndexAnnotations =
-    [
-        "SqlServer:FillFactor",
-        "SqlServer:SortInTempDb",
-        "SqlServer:DataCompression",
-    ];
-
     private bool TryGenerateSpatialIndex(
         CreateIndexOperation operation,
         MigrationCommandListBuilder builder,
@@ -27,7 +20,8 @@ internal sealed partial class ExtendedSqlServerMigrationsSqlGenerator
             return false;
         }
 
-        ValidateSpatialIndexOperation(operation, indexName);
+        SpatialIndexAnnotation.ValidateIndex(
+            operation, indexName, operation.Columns.Length, operation.IsUnique, operation.Filter, operation.IsDescending);
 
         var sqlHelper = Dependencies.SqlGenerationHelper;
         builder.Append("CREATE SPATIAL INDEX ")
@@ -81,57 +75,6 @@ internal sealed partial class ExtendedSqlServerMigrationsSqlGenerator
         }
 
         return true;
-    }
-
-    private static void ValidateSpatialIndexOperation(CreateIndexOperation operation, string indexName)
-    {
-        if (operation.Columns.Length != 1)
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' must target exactly one column.");
-        }
-
-        if (operation.IsUnique)
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' cannot be unique.");
-        }
-
-        if (operation.Filter is not null)
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' cannot have a filter.");
-        }
-
-        if (operation.IsDescending is not null)
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' cannot specify sort order.");
-        }
-
-        if (operation["SqlServer:Clustered"] is true)
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' cannot be clustered.");
-        }
-
-        if (operation["SqlServer:Include"] is Array { Length: > 0 })
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' cannot have included columns.");
-        }
-
-        if (operation.FindAnnotation("SqlServer:Online") is not null)
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' does not support ONLINE.");
-        }
-
-        if (UnsupportedSpatialIndexAnnotations.Any(name => operation.FindAnnotation(name) is not null))
-        {
-            throw new InvalidOperationException(
-                $"Spatial index '{indexName}' does not support additional SQL Server index options yet.");
-        }
     }
 
     private static string FormatCoordinate(double coordinate)

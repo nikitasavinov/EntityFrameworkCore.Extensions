@@ -4,6 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="[6.1.8, 7.0.0)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="[10.0.12, 11.0.0)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="[10.0.12, 11.0.0)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="[10.0.12, 11.0.0)" />

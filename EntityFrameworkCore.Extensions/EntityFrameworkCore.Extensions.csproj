@@ -23,6 +23,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Lifts the transitive Microsoft.Data.SqlClient to a release that no longer pulls in
+         the vulnerable System.Security.Cryptography.Pkcs 9.0.11 (GHSA-846f-f764-76mx). -->
+    <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
   </ItemGroup>
 

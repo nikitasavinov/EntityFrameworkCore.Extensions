@@ -3,183 +3,240 @@
 [![CI](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml/badge.svg)](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/actions/workflows/dotnetcore.yml)
 [![NuGet downloads](https://img.shields.io/nuget/dt/EntityFrameworkCore.Extensions?logo=nuget&label=downloads&color=004880)](https://www.nuget.org/packages/EntityFrameworkCore.Extensions/)
 
-SQL Server columnstore and spatial indexes, dynamic data masking, query and table hints, and migration helpers for EF Core 10.
+SQL Server features that EF Core 10 has no built-in API for, configured in the model and in LINQ:
 
-See [EntityFrameworkCore.Extensions.Samples](./EntityFrameworkCore.Extensions.Samples) for more usage examples.
+- [Dynamic data masking](#dynamic-data-masking): `HasDataMask` masks a column, so users without the `UNMASK` permission read `+1XX-XX8` where `+12345678` is stored.
+- [Spatial indexes](#spatial-indexes): `HasSpatialIndex` creates an index on a `geography` or `geometry` column, with bounding box and cells-per-object options.
+- [Columnstore indexes](#columnstore-indexes): `HasColumnstoreIndex` creates a nonclustered columnstore index on the columns you select, with an optional filter.
+- [Query and table hints](#query-and-table-hints): `WithQueryHints` and `WithTableHints` add `OPTION (...)` and `WITH (...)` to a LINQ query, for hints such as `RECOMPILE`, `MAXDOP`, `NOLOCK`, `UPDLOCK` and `READPAST`.
+- [Helpers](#helpers): `MigrateIfSupported` for providers without migrations, `SqlFile` for SQL files in migrations, and `OverrideDeleteBehaviour` for a model-wide delete behavior.
 
-## Features
+Indexes and masks are part of the model, so migrations create, change and drop them.
 
-- SQL Server dynamic data masking with migration support.
-- SQL Server `geography` and `geometry` spatial indexes.
-- SQL Server nonclustered columnstore indexes, including filtered indexes.
-- SQL Server query hints (`OPTION`) and table hints (`WITH`).
-- Model-wide delete behavior.
-- SQL files in migrations.
-- Provider-aware synchronous and asynchronous migrations.
-- [Upcoming] Dynamic data masking polish: scoped `GRANT` / `REVOKE UNMASK` support and remaining alter/drop edge cases.
-- [Upcoming] Row-level security through fluent annotations and migration SQL.
-- [Upcoming] SQL Server ledger table support.
-- [Upcoming] More to come.
-
-## Changelog
-
-### 10.3.0
-
-- Added SQL Server query hints (`OPTION`) and table hints (`WITH`) through `WithQueryHints` and `WithTableHints`.
-
-### 10.2.0
-
-- Added nonclustered columnstore indexes with fluent configuration for entity and owned-entity properties.
-- Added migration support for creating, changing, renaming, and dropping columnstore indexes, with validation of supported columns and index options.
-
-### 10.1.0
-
-- Added SQL Server auto-grid spatial indexes for `geography` and `geometry`, including bounding-box and cells-per-object options.
-- Added fluent configuration for entity and owned-entity spatial indexes, with migration support.
-
-### 10.0.0
-
-EntityFrameworkCore.Extensions has been revived and modernized after several years:
-
-- Updated from .NET Core 3.1 and EF Core 5 to .NET 10 and EF Core 10.
-- Strengthened dynamic data masking migrations, including mask changes, removals, and safer SQL generation.
-- Kept registration inert for non-relational providers such as InMemory, with migration helpers remaining no-ops.
-- Added current Linux and Windows CI, package validation, and integration tests against a real SQL Server instance.
-
-## Install
+## Installation
 
 ```shell
 dotnet add package EntityFrameworkCore.Extensions
 ```
 
-## Example
+```csharp
+services.AddDbContext<AppDbContext>(options => options
+    .UseSqlServer(connectionString)
+    .UseEntityFrameworkCoreExtensions());
+```
+
+- Requires EF Core 10, .NET 10 and SQL Server 2016 or later.
+- `UseEntityFrameworkCoreExtensions()` can be called before or after `UseSqlServer`, and also in `OnConfiguring`.
+- Sample project: [EntityFrameworkCore.Extensions.Samples](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/tree/master/EntityFrameworkCore.Extensions.Samples).
+
+## Dynamic data masking
+
+`HasDataMask` applies a [dynamic data masking](https://learn.microsoft.com/sql/relational-databases/security/dynamic-data-masking) function to a column. Users without the `UNMASK` permission read masked values. The stored data is unchanged.
 
 ```csharp
-public sealed class SampleContext : DbContext
+modelBuilder.Entity<Customer>(customer =>
 {
-    public DbSet<Customer> Customers => Set<Customer>();
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlServer("your connection string");
-        }
-
-        // 1. Register EntityFrameworkCore.Extensions services.
-        optionsBuilder.UseEntityFrameworkCoreExtensions();
-    }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-
-        // 2. Set Cascade as the default delete behavior.
-        modelBuilder.OverrideDeleteBehaviour(DeleteBehavior.Cascade);
-
-        // 3. Add SQL Server dynamic data masks.
-        modelBuilder.Entity<Customer>()
-            .Property(customer => customer.Surname)
-            .HasDataMask(MaskingFunctions.Default());
-
-        modelBuilder.Entity<Customer>()
-            .Property(customer => customer.DiscountCardNumber)
-            .HasDataMask(MaskingFunctions.Random(10, 100));
-
-        modelBuilder.Entity<Customer>()
-            .Property(customer => customer.Phone)
-            .HasDataMask(MaskingFunctions.Partial(2, "XX-XX", 1));
-    }
-}
-
-public static class Program
-{
-    public static void Main()
-    {
-        using var context = new SampleContext();
-
-        // 4. This is a no-op for non-relational providers such as InMemory.
-        context.Database.MigrateIfSupported();
-    }
-}
+    customer.Property(c => c.Surname).HasDataMask(MaskingFunctions.Default());
+    customer.Property(c => c.Email).HasDataMask(MaskingFunctions.Email());
+    customer.Property(c => c.Phone).HasDataMask(MaskingFunctions.Partial(2, "XX-XX", 1));
+    customer.Property(c => c.DiscountCardNumber).HasDataMask(MaskingFunctions.Random(10, 100));
+});
 ```
+
+| Function | Stored value | Read without `UNMASK` |
+| --- | --- | --- |
+| `Default()` | `Smith` | `xxxx` |
+| `Email()` | `smith@example.com` | `sXXX@XXXX.com` |
+| `Partial(2, "XX-XX", 1)` | `+12345678` | `+1XX-XX8` |
+| `Random(10, 100)` | `12881234` | a random number from 10 to 100 |
+
+- Migrations add, replace and drop masks as the model changes.
+- `HasDataMask` accepts any masking function as a string, for example `HasDataMask("datetime(\"Y\")")` on SQL Server 2022 or later.
+- Permissions are not modeled. Grant `UNMASK` in SQL. Members of `db_owner` always read the stored values.
 
 ## Spatial indexes
 
-Install `Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite`, enable it in `UseSqlServer()`, and configure the index alongside the rest of the entity model:
+`HasSpatialIndex` creates a spatial index on a `geography` or `geometry` column. It requires the `Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite` package and `UseNetTopologySuite()` in `UseSqlServer`.
 
 ```csharp
-optionsBuilder.UseSqlServer(
-    connectionString,
-    sqlServer => sqlServer.UseNetTopologySuite());
-optionsBuilder.UseEntityFrameworkCoreExtensions();
-
 modelBuilder.Entity<Place>()
-    .Property(place => place.Location)
-    .HasColumnType("geography");
+    .HasSpatialIndex(p => p.Location);
 
-modelBuilder.Entity<Place>()
-    .HasSpatialIndex(place => place.Location)
-    .HasDatabaseName("SIX_Places_Location");
-
-modelBuilder.Entity<Region>()
-    .Property(region => region.Boundary)
-    .HasColumnType("geometry");
-
-modelBuilder.Entity<Region>()
-    .HasSpatialIndex(
-        region => region.Boundary,
-        spatial => spatial
-            .HasBoundingBox(-180, -90, 180, 90)
-            .HasCellsPerObject(32))
-    .HasDatabaseName("SIX_Regions_Boundary");
+modelBuilder.Entity<Region>(region =>
+{
+    region.Property(r => r.Boundary).HasColumnType("geometry");
+    region.HasSpatialIndex(
+            r => r.Boundary,
+            spatial => spatial.HasBoundingBox(-180, -90, 180, 90).HasCellsPerObject(32))
+        .HasDatabaseName("SIX_Regions_Boundary");
+});
 ```
 
-`geography` uses `GEOGRAPHY_AUTO_GRID`. `geometry` uses `GEOMETRY_AUTO_GRID` and requires a bounding box.
+```sql
+CREATE SPATIAL INDEX [IX_Places_Location] ON [Places] ([Location])
+USING GEOGRAPHY_AUTO_GRID;
 
-Each entity with a spatial index must have a primary key backed by a clustered SQL Server index. This is the SQL Server provider default; configuring the primary key with `.IsClustered(false)` is not supported. Only `.HasDatabaseName()` may be chained after `.HasSpatialIndex()`; unique, filtered, clustered, included-column, descending, and other SQL Server index options are not supported.
+CREATE SPATIAL INDEX [SIX_Regions_Boundary] ON [Regions] ([Boundary])
+USING GEOMETRY_AUTO_GRID
+WITH (BOUNDING_BOX = (-180, -90, 180, 90), CELLS_PER_OBJECT = 32);
+```
 
-Use the overload with a model index name to create multiple spatial indexes on one property, and use `.HasDatabaseName()` to give each one a distinct SQL index name. The same expression-based, string-based, and named overloads are available on `OwnedNavigationBuilder`.
+- NetTopologySuite properties map to `geography` by default. Set `HasColumnType("geometry")` for `geometry`.
+- A `geometry` index requires `HasBoundingBox`. A `geography` index does not accept one. `HasCellsPerObject` is optional.
+- Overloads accept property names as strings, owned types, and a model index name for a second index on the same property.
 
 ## Columnstore indexes
 
-Configure a nonclustered columnstore index for reporting and aggregation queries on SQL Server 2016 or later:
+`HasColumnstoreIndex` creates a nonclustered columnstore index with an optional filter.
 
 ```csharp
-optionsBuilder.UseSqlServer(connectionString);
-optionsBuilder.UseEntityFrameworkCoreExtensions();
-
-modelBuilder.Entity<Order>().Property(order => order.Amount).HasPrecision(18, 2);
 modelBuilder.Entity<Order>()
-    .HasColumnstoreIndex(order => new { order.Created, order.Amount })
+    .HasColumnstoreIndex(o => new { o.Created, o.Amount })
     .HasDatabaseName("NCCI_Orders_Reporting")
-    .HasFilter("[Amount] > 0"); // Optional SQL predicate, using database column names.
+    .HasFilter("[Amount] > 0");
 ```
 
-The generated migration creates a `CREATE NONCLUSTERED COLUMNSTORE INDEX`. Changes to its selected columns or filter drop and recreate the index; renames and removal use the standard EF Core migration operations. Reverse migrations restore the previous definition. See the sample project's `AddColumnstoreIndex` migration for an example.
+```sql
+CREATE NONCLUSTERED COLUMNSTORE INDEX [NCCI_Orders_Reporting]
+ON [Orders] ([Created], [Amount])
+WHERE [Amount] > 0;
+```
 
-Use the expression overload for one property or an anonymous object containing several properties. String-based overloads accept property names, for example `.HasColumnstoreIndex("Created", "Amount")`. To retain an ordinary index on the same properties, give the columnstore index a separate **model** name: `.HasColumnstoreIndex(order => new { order.Created, order.Amount }, "Reporting")`. The same overloads are available for owned entities, with the string-based named overload taking a property-name array followed by the model index name.
-
-SQL Server permits only one columnstore index per table, including tables shared by owned entities. This implementation supports nonclustered indexes with 1–1024 columns of supported built-in SQL Server types. Indexed strings and binary values must have bounded lengths; `varchar(max)`, `nvarchar(max)`, `varbinary(max)`, XML, spatial/CLR types, `sql_variant`, `rowversion`, computed columns, and sparse columns are unsupported. Nonclustered columnstore indexes on memory-optimized tables are also unsupported.
-
-Only `.HasDatabaseName()` and `.HasFilter()` customize these indexes; explicit `.IsClustered(false)`, `.IsCreatedOnline(false)`, and `.SortInTempDb(false)` are also accepted. Clustered columnstore indexes, unique indexes, included columns, sort direction, ordered columnstore indexes, and additional SQL Server index options such as ONLINE or compression settings are not implemented. Invalid configurations fail during design-time model creation or migration SQL generation. Table and column checks during SQL generation require corresponding model metadata; handwritten migrations without it rely on SQL Server for those checks. See [SQL Server's columnstore documentation](https://learn.microsoft.com/en-us/sql/t-sql/statements/create-columnstore-index-transact-sql) for database requirements and restrictions.
+- Changing the columns or the filter drops and recreates the index. Changing the database name renames it.
+- A string property without a configured length becomes `nvarchar(450)`, as for any index. Set `HasMaxLength` to control it.
+- To keep a rowstore index on the same columns, pass a model index name: `.HasColumnstoreIndex(o => new { o.Created, o.Amount }, "Reporting")`.
+- Overloads accept property names as strings and owned types.
 
 ## Query and table hints
 
-Add SQL Server hints to a LINQ query. `UseEntityFrameworkCoreExtensions()` registers the SQL generator:
+`WithQueryHints` appends one `OPTION (...)` clause to the statement. `WithTableHints` adds `WITH (...)` to every table in the statement, including joined tables and subqueries. SQL Server documents each [query hint](https://learn.microsoft.com/sql/t-sql/queries/hints-transact-sql-query) and [table hint](https://learn.microsoft.com/sql/t-sql/queries/hints-transact-sql-table).
 
 ```csharp
 var orders = await context.Orders
-    .Where(order => order.CustomerId == customerId)
-    .Include(order => order.Lines)
-    .TagWith("Orders for customer page")
-    .WithQueryHints(QueryHint.Recompile(), QueryHint.MaxDop(1))
+    .Where(o => o.CustomerId == customerId)
+    .WithQueryHints(QueryHint.Recompile())
     .WithTableHints(TableHint.NoLock())
     .ToListAsync();
 ```
 
-Query hints become one `OPTION` clause at the end of the statement. Table hints become a `WITH (...)` clause on every table the statement references, including joins and subqueries. Other query tags stay SQL comments and do not have to come first. The same calls apply to `ExecuteUpdate` and `ExecuteDelete`, to every command of a split query, and to hints written inside a compiled query, a correlated subquery, or a global query filter. Calling either method on an EF Core query throws when `UseEntityFrameworkCoreExtensions()` was not configured.
+```sql
+SELECT [o].[Id], [o].[Amount], [o].[Created], [o].[CustomerId]
+FROM [Orders] AS [o] WITH (NOLOCK)
+WHERE [o].[CustomerId] = @customerId
+OPTION (RECOMPILE)
+```
 
-`QueryHint` and `TableHint` check their arguments, and combinations SQL Server does not allow on one statement (such as two `MAXDOP` values, `NOLOCK` with `ROWLOCK`, `NOLOCK` with `UPDLOCK` or `XLOCK`, or `READPAST` with `NOLOCK`, `HOLDLOCK`, or `SERIALIZABLE`) throw before a command is sent. Several `JOIN`, `UNION`, or `GROUP` strategy hints can be combined, as can `KEEP PLAN` with `KEEPFIXED PLAN`. Hints in one call are written in the order given. See [query hints](https://learn.microsoft.com/sql/t-sql/queries/hints-transact-sql-query) and [table hints](https://learn.microsoft.com/sql/t-sql/queries/hints-transact-sql-table) for what SQL Server does with each one. The supported set works on SQL Server 2016 and later.
+Locking hints, inside a transaction:
 
-Table hints apply to every table the statement references, including each table of a join. Uncomposed `FromSql` and `SqlQuery` queries keep the SQL you wrote, so put hints in that SQL. A query that includes `FromSql`, `SqlQuery`, or a table-valued function cannot take table hints, including when that source is joined to a mapped table, because those rows would be read without the hint. A composed raw SQL query can take query hints. Locking hints such as `UPDLOCK` last only until the current transaction ends.
+```csharp
+await using var transaction = await context.Database.BeginTransactionAsync();
+
+var job = await context.Jobs
+    .Where(j => j.StartedAt == null)
+    .OrderBy(j => j.Id)
+    .WithTableHints(TableHint.UpdLock(), TableHint.ReadPast(), TableHint.RowLock())
+    .FirstOrDefaultAsync();
+
+if (job is not null)
+{
+    job.StartedAt = DateTime.UtcNow;
+    await context.SaveChangesAsync();
+}
+
+await transaction.CommitAsync();
+```
+
+```sql
+SELECT TOP(1) [j].[Id], [j].[Payload], [j].[StartedAt]
+FROM [Jobs] AS [j] WITH (UPDLOCK, READPAST, ROWLOCK)
+WHERE [j].[StartedAt] IS NULL
+ORDER BY [j].[Id]
+```
+
+- Hints apply to `Include` joins, every command of a split query, `ExecuteUpdate`, `ExecuteDelete` and temporal tables. Hint calls inside compiled queries, correlated subqueries and global query filters are supported.
+- Hint arguments are validated. Combinations that SQL Server rejects, such as `NOLOCK` with `UPDLOCK` or two `MAXDOP` values, throw before a command is sent.
+- Both methods throw when `UseEntityFrameworkCoreExtensions()` is not configured. The InMemory provider ignores hints.
+- Locking hints such as `UPDLOCK` hold their locks until the transaction ends.
+
+### Supported hints
+
+**Query hints** (`QueryHint`): `RECOMPILE`, `MAXDOP`, `MAXRECURSION`, `OPTIMIZE FOR UNKNOWN`, `FORCE ORDER`, `HASH JOIN`, `LOOP JOIN`, `MERGE JOIN`, `HASH GROUP`, `ORDER GROUP`, `CONCAT UNION`, `HASH UNION`, `MERGE UNION`, `FAST`, `KEEP PLAN`, `KEEPFIXED PLAN`, `ROBUST PLAN`, `EXPAND VIEWS`, `NO_PERFORMANCE_SPOOL`, `IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX`, `MAX_GRANT_PERCENT`, `MIN_GRANT_PERCENT`, and any `USE HINT` name.
+
+**Table hints** (`TableHint`): `NOLOCK`, `READUNCOMMITTED`, `READCOMMITTED`, `READCOMMITTEDLOCK`, `REPEATABLEREAD`, `SERIALIZABLE`, `HOLDLOCK`, `UPDLOCK`, `XLOCK`, `ROWLOCK`, `PAGLOCK`, `TABLOCK`, `TABLOCKX`, `READPAST`, `NOWAIT`, `FORCESEEK`, `FORCESCAN`.
+
+Factory methods use the matching names, for example `QueryHint.OptimizeForUnknown()`, `QueryHint.MaxDop(4)`, `QueryHint.UseHint("DISABLE_PARAMETER_SNIFFING")` and `TableHint.ReadPast()`.
+
+## Helpers
+
+### MigrateIfSupported
+
+Applies pending migrations. On a provider without migrations, such as InMemory, it does nothing, whereas `Migrate()` throws.
+
+```csharp
+await context.Database.MigrateIfSupportedAsync();
+```
+
+### SqlFile
+
+Adds the contents of a SQL file to a migration. The file is read when the migration is applied or scripted, so it must be copied to the output directory and addressed from `AppContext.BaseDirectory`.
+
+```csharp
+migrationBuilder.SqlFile(
+    Path.Combine(AppContext.BaseDirectory, "SqlFiles", "ImportCustomers.sql"));
+```
+
+```xml
+<None Update="SqlFiles/ImportCustomers.sql" CopyToOutputDirectory="PreserveNewest" />
+```
+
+### OverrideDeleteBehaviour
+
+Sets the delete behavior of every foreign key that is already in the model. Call it at the end of `OnModelCreating`. The default argument is `Restrict`.
+
+```csharp
+modelBuilder.OverrideDeleteBehaviour(DeleteBehavior.Restrict);
+```
+
+## Limitations
+
+Unsupported model configurations are rejected when the migration is generated. Unsupported hints throw before a command is sent.
+
+**Spatial indexes**
+
+- The table must have a clustered primary key, which is the EF Core default.
+- An index covers one column and uses auto-grid tessellation.
+- Only `HasDatabaseName()` can be chained. Unique, filtered, included-column, descending and other index options are rejected.
+
+**Columnstore indexes**
+
+- SQL Server allows one columnstore index per table. An index can have up to 1,024 columns.
+- Only nonclustered columnstore indexes are created. Clustered and ordered columnstore indexes are not available.
+- Only `HasDatabaseName()` and `HasFilter()` can be chained. Uniqueness, included columns, sort order, `ONLINE` and compression are rejected.
+- Supported column types are numeric, `bit`, date and time, `uniqueidentifier`, and string and binary types with a bounded length. Computed columns, sparse columns and memory-optimized tables are rejected.
+- Database requirements are listed in SQL Server's [CREATE COLUMNSTORE INDEX](https://learn.microsoft.com/sql/t-sql/statements/create-columnstore-index-transact-sql) documentation.
+
+**Query and table hints**
+
+- Table hints apply to every table in the statement. A single table cannot be targeted.
+- Index hints are not available.
+- Uncomposed `FromSql` and `SqlQuery` queries reject hints. Composed ones accept query hints only. Queries over table-valued functions reject table hints.
+
+## Compatibility
+
+- CI runs the integration tests against SQL Server 2016 and SQL Server 2025.
+- With the InMemory provider the registration is inert: the model builds, hints are ignored and `MigrateIfSupported` does nothing. Other relational providers are rejected with an `InvalidOperationException`.
+- `UseEntityFrameworkCoreExtensions()` replaces six EF Core services: `IMigrationsSqlGenerator`, `IRelationalAnnotationProvider`, `IQuerySqlGeneratorFactory`, `IRelationalParameterBasedSqlProcessorFactory`, `IQueryTranslationPreprocessorFactory` and `IQueryCompiler`. If another registration replaces one of them, the last one takes effect.
+
+## Roadmap
+
+- `GRANT` and `REVOKE UNMASK` for dynamic data masking.
+- Row-level security.
+- Ledger tables.
+
+## Release notes
+
+[GitHub Releases](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/releases)
+
+## License
+
+[MIT](https://github.com/nikitasavinov/EntityFrameworkCore.Extensions/blob/master/LICENSE)

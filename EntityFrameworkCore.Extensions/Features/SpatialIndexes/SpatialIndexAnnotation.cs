@@ -7,6 +7,70 @@ internal static class SpatialIndexAnnotation
     public const string Geography = "geography";
     public const string Geometry = "geometry";
 
+    private static readonly string[] UnsupportedIndexAnnotations =
+    [
+        "SqlServer:FillFactor",
+        "SqlServer:SortInTempDb",
+        "SqlServer:DataCompression",
+    ];
+
+    public static void ValidateIndex(
+        IReadOnlyAnnotatable annotatable,
+        string indexName,
+        int columnCount,
+        bool isUnique,
+        string? filter,
+        IReadOnlyList<bool>? isDescending)
+    {
+        if (columnCount != 1)
+        {
+            throw new InvalidOperationException(
+                $"Spatial index '{indexName}' must target exactly one column.");
+        }
+
+        if (isUnique)
+        {
+            throw new InvalidOperationException(
+                $"Spatial index '{indexName}' cannot be unique.");
+        }
+
+        if (filter is not null)
+        {
+            throw new InvalidOperationException(
+                $"Spatial index '{indexName}' cannot have a filter.");
+        }
+
+        if (isDescending is not null)
+        {
+            throw new InvalidOperationException(
+                $"Spatial index '{indexName}' cannot specify sort order.");
+        }
+
+        if (annotatable["SqlServer:Clustered"] is true)
+        {
+            throw new InvalidOperationException(
+                $"Spatial index '{indexName}' cannot be clustered.");
+        }
+
+        if (annotatable["SqlServer:Include"] is IReadOnlyList<string> { Count: > 0 } or Array { Length: > 0 })
+        {
+            throw new InvalidOperationException(
+                $"Spatial index '{indexName}' cannot have included columns.");
+        }
+
+        if (annotatable.FindAnnotation("SqlServer:Online") is not null)
+        {
+            throw new InvalidOperationException(
+                $"Spatial index '{indexName}' does not support ONLINE.");
+        }
+
+        if (UnsupportedIndexAnnotations.Any(name => annotatable.FindAnnotation(name) is not null))
+        {
+            throw new InvalidOperationException(
+                $"Spatial index '{indexName}' does not support additional SQL Server index options yet.");
+        }
+    }
+
     public static SpatialIndexOptions? GetOptions(IReadOnlyAnnotatable annotatable, string objectName)
     {
         var marker = annotatable.FindAnnotation(AnnotationConstants.SpatialIndex);
